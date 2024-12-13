@@ -17,7 +17,7 @@ jobs:
       version_to_release: ${{ steps.n8n_version.outputs.version_to_release }}
 
     steps:
-      - name: 👀 Get the latest Codely n8n custom image stable release
+      - name: 👀 Get the latest codeculture n8n custom image stable release
         id: custom_image_release
         uses: pozetroninc/github-action-get-latest-release@v0.8.0
         with:
