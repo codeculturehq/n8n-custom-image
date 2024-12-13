@@ -21,7 +21,7 @@ jobs:
         id: custom_image_release
         uses: pozetroninc/github-action-get-latest-release@v0.8.0
         with:
-          repository: CodelyTV/n8n-codely-custom-image
+          repository: codeculturehq/n8n-custom-image
           excludes: prerelease,draft
           token: ${{ secrets.GITHUB_TOKEN }}
 
