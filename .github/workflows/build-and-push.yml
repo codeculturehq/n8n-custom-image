@@ -33,7 +33,7 @@ jobs:
           context: .
           build-args: N8N_VERSION=${{ inputs.n8n_version }}
           push: true
-          tags: codelytvtech/n8n-custom-image:${{ inputs.n8n_version }}
+          tags: codeculturehq/n8n-custom-image:${{ inputs.n8n_version }}
 
   create-release:
     name: 🏷️ Create GitHub Release
