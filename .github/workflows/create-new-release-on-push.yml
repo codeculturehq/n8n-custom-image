@@ -78,6 +78,9 @@ jobs:
           version_to_release=$(echo "${{ steps.n8n_release.outputs.release }}" | sed 's/n8n@//g')
           echo "version_to_release=$version_to_release" >> $GITHUB_OUTPUT
           echo "next_version_suffix=${{ steps.new_release_check.outputs.next_version_suffix }}" >> $GITHUB_OUTPUT
+          
+          cat $GITHUB_OUTPUT     
+          exit 1
 
   build-and-push-new-docker-image:
     needs: check-new-release
