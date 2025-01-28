@@ -1,9 +1,9 @@
-name: 👀 Check for new n8n stable releases and builds a new custom image release if needed
+name: Create new release on push
 
 on:
-  schedule:
-    - cron: '0 8 * * *' # Every day at 8am
-  workflow_dispatch:
+  push:
+    branches:
+      - main
 
 jobs:
   check-new-release:
@@ -44,13 +44,22 @@ jobs:
           n8n_version=$(echo "${{ steps.n8n_release.outputs.release }}" | sed 's/n8n@//g')
 
           latest_version=$(echo -e "$custom_version\n$n8n_version" | sort -V | tail -n1)
-
+          echo "has_new_release=true" >> $GITHUB_OUTPUT
+          
+          # Calculate the next_version_suffix to compare with the new release
+          # If the custom_version does not equal the latest_version, then it is a new release and we don't need a suffix
           if [ "$custom_version" != "$latest_version" ]; then
-            echo "has_new_release=true" >> $GITHUB_OUTPUT
-            echo "🤩 New release detected! Releasing new custom image version in 1, 2…"
+              echo "next_version_suffix=''" >> $GITHUB_OUTPUT
           else
-            echo "has_new_release=false" >> $GITHUB_OUTPUT
-            echo "👍 Release has not changed or it is previous to the current one. Doing nothing."
+              # If the custom_version equals the latest_version, then it is a new release and we need to increment the suffix
+              # If there is no suffix present we start with 1
+              suffix=$(echo "$custom_version_orig" | sed 's/.*-//g')
+              if [ -z "$suffix" ]; then
+                  suffix='-1'
+              else
+                  suffix='-$((suffix + 1))'
+              fi
+              echo "next_version_suffix=$suffix" >> $GITHUB_OUTPUT
           fi
 
       - name: 🔡 Remove 'n8n@' from release name to get the version
@@ -67,3 +76,4 @@ jobs:
     secrets: inherit
     with:
       n8n_version: ${{ needs.check-new-release.outputs.version_to_release }}
+      next_version_suffix: ${{ needs.check-new-release.outputs.next_version_suffix }}

@@ -8,11 +8,19 @@ on:
         description: 'n8n version to build. Example: 1.20.0'
         required: true
         type: string
+      next_version_suffix:
+        description: 'Next version suffix to compare with the new release. Example: 0'
+        required: false
+        type: string
   workflow_dispatch:
     inputs:
       n8n_version:
         description: 'n8n version to build. Example: 1.20.0'
         required: true
+        type: string
+      next_version_suffix:
+        description: 'Next version suffix to compare with the new release. Example: 0'
+        required: false
         type: string
 
 jobs:
@@ -33,7 +41,7 @@ jobs:
           context: .
           build-args: N8N_VERSION=${{ inputs.n8n_version }}
           push: true
-          tags: codeculturehq/n8n-custom-image:${{ inputs.n8n_version }}
+          tags: tinod/n8n-custom-image:${{ inputs.n8n_version }}${{ inputs.next_version_suffix }}
 
   create-release:
     name: 🏷️ Create GitHub Release
@@ -46,7 +54,7 @@ jobs:
       - uses: ncipollo/release-action@v1
         with:
           commit: main
-          tag: n8n@${{ inputs.n8n_version }}
+          tag: n8n@${{ inputs.n8n_version }}${{ inputs.next_version_suffix }}
 
   notify-new-release:
     # It would be great to have this as a separate workflow triggered by the release event,
