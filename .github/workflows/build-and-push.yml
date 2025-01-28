@@ -71,7 +71,7 @@ jobs:
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.RELEASE_NOTIFICATION__SLACK_WEBHOOK_URL }}
         with:
-          webhook: ${{ secrets.RELEASE_NOTIFICATION__SLACK_WEBHOOK_URL }}
+          webhook-type: webhook-trigger
           payload: |
             {
               "n8n_version": "${{ inputs.n8n_version }}"
