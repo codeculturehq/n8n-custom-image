@@ -46,9 +46,14 @@ jobs:
           latest_version=$(echo -e "$custom_version\n$n8n_version" | sort -V | tail -n1)
           echo "has_new_release=true" >> $GITHUB_OUTPUT
           
+          # Debug print
+          echo "custom_version_orig=$custom_version_orig"
+          echo "custom_version=$custom_version"
+          echo "n8n_version=$n8n_version"
+          
           # Calculate the next_version_suffix to compare with the new release
           # If the custom_version does not equal the latest_version, then it is a new release and we don't need a suffix
-          if [ "$custom_version" != "$latest_version" ]; then
+          if [ "$custom_version" != "$n8n_version" ]; then
               echo "next_version_suffix=''" >> $GITHUB_OUTPUT
           else
               # If the custom_version equals the latest_version, then it is a new release and we need to increment the suffix
@@ -59,6 +64,7 @@ jobs:
               else
                   suffix='-$((suffix + 1))'
               fi
+              echo "next_version_suffix=$suffix"
               echo "next_version_suffix=$suffix" >> $GITHUB_OUTPUT
           fi
 
@@ -69,11 +75,11 @@ jobs:
           version_to_release=$(echo "${{ steps.n8n_release.outputs.release }}" | sed 's/n8n@//g')
           echo "version_to_release=$version_to_release" >> $GITHUB_OUTPUT
 
-  build-and-push-new-docker-image:
-    needs: check-new-release
-    if: ${{ needs.check-new-release.outputs.has_new_release == 'true' }}
-    uses: ./.github/workflows/build-and-push.yml
-    secrets: inherit
-    with:
-      n8n_version: ${{ needs.check-new-release.outputs.version_to_release }}
-      next_version_suffix: ${{ needs.check-new-release.outputs.next_version_suffix }}
+  #build-and-push-new-docker-image:
+  #  needs: check-new-release
+  #  if: ${{ needs.check-new-release.outputs.has_new_release == 'true' }}
+  #  uses: ./.github/workflows/build-and-push.yml
+  #  secrets: inherit
+  #  with:
+  #    n8n_version: ${{ needs.check-new-release.outputs.version_to_release }}
+  #    next_version_suffix: ${{ needs.check-new-release.outputs.next_version_suffix }}
