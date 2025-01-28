@@ -73,7 +73,6 @@ jobs:
         with:
           webhook-type: webhook-trigger
           payload: |
-            {
-              "n8n_version": "${{ inputs.n8n_version }}"
-            }
+            channel: #it
+            text: "New N8N Image was pushed with version ${{ inputs.n8n_version }}${{ inputs.next_version_suffix }}. :tada:"
 
