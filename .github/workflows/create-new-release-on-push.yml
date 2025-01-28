@@ -62,7 +62,7 @@ jobs:
               if [ -z "$suffix" ]; then
                   suffix='-1'
               else
-                  suffix='-$((suffix + 1))'
+                  suffix="-$((suffix + 1))"
               fi
               echo "next_version_suffix=$suffix"
               echo "next_version_suffix=$suffix" >> $GITHUB_OUTPUT
