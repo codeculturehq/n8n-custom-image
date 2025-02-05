@@ -55,7 +55,7 @@ jobs:
           # Calculate the next_version_suffix to compare with the new release
           # If the custom_version does not equal the latest_version, then it is a new release and we don't need a suffix
           if [ "$custom_version" != "$n8n_version" ]; then
-              echo "next_version_suffix=''" >> $GITHUB_OUTPUT
+              echo "next_version_suffix=" >> $GITHUB_OUTPUT
           else
               # If the custom_version equals the latest_version, then it is a new release and we need to increment the suffix
               # If there is no suffix present we start with 1
