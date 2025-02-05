@@ -33,10 +33,6 @@ RUN mkdir -p ~/.n8n/nodes
 
 # Add custom n8n nodes from Codely
 RUN cd ~/.n8n/nodes && \
-    npm install --production --force n8n-nodes-puppeteer
-
-# Installiere temporär Build-Tools (virtuelles Paket)
-RUN apk add --no-cache --virtual .build-deps gcc musl-dev python3-dev libffi-dev \
+    npm install --production --force n8n-nodes-puppeteer \
     && pip install pymupdf4llm \
-    && pip install docling \
-    && apk del .build-deps
+    && pip install docling
