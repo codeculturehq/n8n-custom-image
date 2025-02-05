@@ -14,6 +14,7 @@ RUN apk add --no-cache \
       ttf-freefont \
       yarn \
       python3 \
+      python3-dev \
       py3-setuptools \
       py3-pip \
       curl \
@@ -32,7 +33,10 @@ RUN mkdir -p ~/.n8n/nodes
 
 # Add custom n8n nodes from Codely
 RUN cd ~/.n8n/nodes && \
-    npm install --production --force n8n-nodes-puppeteer && \
-    pip install pymupdf4llm && \
-    pip install docling
-  
+    npm install --production --force n8n-nodes-puppeteer
+
+# Installiere temporär Build-Tools (virtuelles Paket)
+RUN apk add --no-cache --virtual .build-deps gcc musl-dev python3-dev libffi-dev \
+    && pip install pymupdf4llm \
+    && pip install docling \
+    && apk del .build-deps
