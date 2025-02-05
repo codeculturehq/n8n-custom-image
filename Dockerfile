@@ -28,4 +28,8 @@ RUN mkdir -p ~/.n8n/nodes
 # Add custom n8n nodes from Codely
 RUN cd ~/.n8n/nodes && \
     npm install --production --force n8n-nodes-puppeteer
+
+RUN cd ~/ && \
+    pip install pymupdf4llm && \
+    pip install docling
   
