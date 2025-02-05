@@ -14,11 +14,10 @@ RUN apk add --no-cache \
       ttf-freefont \
       yarn \
       python3 \
+      py3-setuptools \
       py3-pip \
-      curl && \
-      ln -sf python3 /usr/bin/python && \
-      python3 -m ensurepip && \
-      pip3 install --no-cache --upgrade pip setuptools
+      curl \
+      && ln -sf python3 /usr/bin/python
 
 # Tell Puppeteer to skip installing Chrome. We'll be using the installed package.
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
