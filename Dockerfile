@@ -17,7 +17,8 @@ RUN apk add --no-cache \
       py3-setuptools \
       py3-pip \
       curl \
-      && ln -sf python3 /usr/bin/python
+      && ln -sf python3 /usr/bin/python \
+      && ln -sf pip3 /usr/bin/pip
 
 # Tell Puppeteer to skip installing Chrome. We'll be using the installed package.
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
@@ -32,7 +33,6 @@ RUN mkdir -p ~/.n8n/nodes
 # Add custom n8n nodes from Codely
 RUN cd ~/.n8n/nodes && \
     npm install --production --force n8n-nodes-puppeteer && \
-    cd ~/ && \
     pip install pymupdf4llm && \
     pip install docling
   
