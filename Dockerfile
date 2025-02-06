@@ -35,4 +35,4 @@ RUN mkdir -p ~/.n8n/nodes
 RUN cd ~/.n8n/nodes && \
     npm install --production --force n8n-nodes-puppeteer \
     && pip install --break-system-packages pymupdf4llm  \
-    && pip install --break-system-packages docling
+    && pip install --break-system-packages docling torch
