@@ -22,15 +22,9 @@ RUN apk add --no-cache \
       libffi-dev \
       openssl-dev \
       musl-dev \
-      && cd /opt \
-      && wget https://www.python.org/ftp/python/${PYTHON_VERSION}/Python-${PYTHON_VERSION}.tgz \
-      && tar xzf Python-${PYTHON_VERSION}.tgz \
-      && cd /opt/Python-${PYTHON_VERSION} \
-      && ./configure --prefix=/usr --enable-optimizations --with-ensurepip=install \
-      && make install \
-      && rm /opt/Python-${PYTHON_VERSION}.tgz /opt/Python-${PYTHON_VERSION} -rf \
-      && ln -sf python3 /usr/bin/python \
-      && ln -sf pip3 /usr/bin/pip
+      py3-pip \
+      python3-dev \
+      py3-setuptools
 
 # Tell Puppeteer to skip installing Chrome. We'll be using the installed package.
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
@@ -45,5 +39,4 @@ RUN mkdir -p ~/.n8n/nodes
 # Add custom n8n nodes from Codely
 RUN cd ~/.n8n/nodes && \
     npm install --production --force n8n-nodes-puppeteer \
-    && pip install --break-system-packages pymupdf4llm  \
-    && pip install --break-system-packages --no-cache-dir docling --extra-index-url https://download.pytorch.org/whl/cpu
+    && pip install --break-system-packages pymupdf4llm
