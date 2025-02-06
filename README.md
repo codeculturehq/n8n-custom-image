@@ -1,3 +1,5 @@
+[![Create new release on push](https://github.com/codeculturehq/n8n-custom-image/actions/workflows/create-new-release-on-push.yml/badge.svg)](https://github.com/codeculturehq/n8n-custom-image/actions/workflows/create-new-release-on-push.yml)
+
 # 🤖🐳 n8n Codely Custom Docker Image
 
 Custom Docker image including [our Twitch node](https://github.com/CodelyTV/n8n-nodes-twitch) and other dependencies
