@@ -35,11 +35,11 @@ jobs:
         id: new_release_check
         run: |
           echo "👀 Latest Codely custom image release: ${{ steps.custom_image_release.outputs.release }}"
-          echo "🆕 Latest n8n release: ${{ steps.n8n_release.outputs.release }}"
+          echo "🆕 Latest n8n release: ${{ steps.n8n_release.outputs }}"
 
           custom_version_orig=$(echo "${{ steps.custom_image_release.outputs.release }}" | sed 's/n8n@//g')
           custom_version=$(echo "$custom_version_orig" | sed 's/-[0-9]*//g')  # Remove the suffix
-          n8n_version=$(echo "${{ steps.n8n_release.outputs.release }}" | sed 's/n8n@//g')
+          n8n_version=$(echo "${{ steps.n8n_release.outputs }}" | sed 's/n8n@//g')
 
           latest_version=$(echo -e "$custom_version\n$n8n_version" | sort -V | tail -n1)
 
@@ -55,7 +55,7 @@ jobs:
         id: n8n_version
         if: steps.new_release_check.outputs.has_new_release == 'true'
         run: |
-          version_to_release=$(echo "${{ steps.n8n_release.outputs.release }}" | sed 's/n8n@//g')
+          version_to_release=$(echo "${{ steps.n8n_release.outputs }}" | sed 's/n8n@//g')
           echo "version_to_release=$version_to_release" >> $GITHUB_OUTPUT
 
   build-and-push-new-docker-image:
