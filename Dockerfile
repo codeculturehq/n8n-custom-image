@@ -19,7 +19,8 @@ RUN apk add --no-cache \
       py3-pip \
       curl \
       && ln -sf python3 /usr/bin/python \
-      && ln -sf pip3 /usr/bin/pip
+      && ln -sf pip3 /usr/bin/pip && \
+      mv /usr/lib/python3.11/EXTERNALLY-MANAGED /usr/lib/python3.11/EXTERNALLY-MANAGED.old
 
 # Tell Puppeteer to skip installing Chrome. We'll be using the installed package.
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
