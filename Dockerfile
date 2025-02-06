@@ -1,6 +1,8 @@
 ARG N8N_VERSION
 FROM n8nio/n8n:${N8N_VERSION}
 ENV PYTHONUNBUFFERED=1
+ARG PYTHON_VERSION=3.11.9
+
 RUN if [ -z "$N8N_VERSION" ] ; then echo "✋ The N8N_VERSION argument is missing!" ; exit 1; fi
 
 USER root
@@ -20,11 +22,13 @@ RUN apk add --no-cache \
       libffi-dev \
       openssl-dev \
       musl-dev \
-      && apk add --repository=http://dl-cdn.alpinelinux.org/alpine/edge/main --no-cache \
-                            python3~3.11 \
-                            python3-dev~3.11 \
-                            py3-setuptools \
-                            py3-pip \
+      && cd /opt \
+      && wget https://www.python.org/ftp/python/${PYTHON_VERSION}/Python-${PYTHON_VERSION}.tgz \
+      && tar xzf Python-${PYTHON_VERSION}.tgz \
+      && cd /opt/Python-${PYTHON_VERSION} \
+      && ./configure --prefix=/usr --enable-optimizations --with-ensurepip=install \
+      && make install \
+      && rm /opt/Python-${PYTHON_VERSION}.tgz /opt/Python-${PYTHON_VERSION} -rf \
       && ln -sf python3 /usr/bin/python \
       && ln -sf pip3 /usr/bin/pip
 
