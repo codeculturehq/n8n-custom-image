@@ -31,6 +31,7 @@ jobs:
         uses: dvershinin/lastversion-action@main
         with:
           repository: 'https://github.com/n8n-io/n8n'
+          extra_args: --pre
 
       - name: 🤲 Check if it is a newer n8n release
         id: new_release_check
