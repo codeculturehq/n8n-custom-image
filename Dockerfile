@@ -18,6 +18,12 @@ RUN apk add --no-cache \
       py3-setuptools \
       py3-pip \
       curl \
+      gcc \
+      make \
+      zlib-dev \
+      libffi-dev \
+      openssl-dev \
+      musl-dev \
       && ln -sf python3 /usr/bin/python \
       && ln -sf pip3 /usr/bin/pip
 
