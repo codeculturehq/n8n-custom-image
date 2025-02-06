@@ -27,11 +27,9 @@ jobs:
 
       - name: 🆕 Get the latest n8n release
         id: n8n_release
-        uses: pozetroninc/github-action-get-latest-release@v0.8.0
+        uses: dvershinin/lastversion-action@main
         with:
-          repository: n8n-io/n8n
-          excludes: draft
-          token: ${{ secrets.GITHUB_TOKEN }}
+          repository: 'https://github.com/n8n-io/n8n'
 
       - name: 🤲 Check if it is a newer n8n release
         id: new_release_check

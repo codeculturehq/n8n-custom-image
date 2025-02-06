@@ -17,7 +17,6 @@ RUN apk add --no-cache \
       python3-dev \
       py3-setuptools \
       py3-pip \
-      pipx \
       curl \
       && ln -sf python3 /usr/bin/python \
       && ln -sf pip3 /usr/bin/pip
@@ -35,5 +34,5 @@ RUN mkdir -p ~/.n8n/nodes
 # Add custom n8n nodes from Codely
 RUN cd ~/.n8n/nodes && \
     npm install --production --force n8n-nodes-puppeteer \
-    && pipx install pymupdf4llm \
-    && pipx install docling
+    && pip install --break-system-packages pymupdf4llm  \
+    && pip install --break-system-packages docling
