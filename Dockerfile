@@ -13,10 +13,6 @@ RUN apk add --no-cache \
       harfbuzz \
       ttf-freefont \
       yarn \
-      python3 \
-      python3-dev \
-      py3-setuptools \
-      py3-pip \
       curl \
       gcc \
       make \
@@ -24,6 +20,11 @@ RUN apk add --no-cache \
       libffi-dev \
       openssl-dev \
       musl-dev \
+      && apk add --repository=http://dl-cdn.alpinelinux.org/alpine/edge/main --no-cache \
+                            python3~3.11 \
+                            python3-dev~3.11 \
+                            py3-setuptools \
+                            py3-pip \
       && ln -sf python3 /usr/bin/python \
       && ln -sf pip3 /usr/bin/pip
 
