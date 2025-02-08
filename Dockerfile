@@ -23,7 +23,8 @@ RUN apk add --no-cache \
       musl-dev \
       py3-pip \
       python3-dev \
-      py3-setuptools
+      py3-setuptools \
+      pandoc
 
 # Tell Puppeteer to skip installing Chrome. We'll be using the installed package.
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
