@@ -42,6 +42,7 @@ jobs:
           build-args: N8N_VERSION=${{ inputs.n8n_version }}
           push: true
           tags: tinod/n8n-custom-image:${{ inputs.n8n_version }}${{ inputs.next_version_suffix }},tinod/n8n-custom-image:latest
+          platforms: linux/amd64,linux/arm64
 
   create-release:
     name: 🏷️ Create GitHub Release
