@@ -35,11 +35,11 @@ RUN npm install -g cryptr
 USER node
 
 # Install custom n8n nodes
-RUN mkdir -p ~/.n8n/nodes
+RUN mkdir -p ~/.n8n/nodes && mkdir -p ~/venv
 RUN cd ~/.n8n/nodes && npm install --production --force n8n-nodes-puppeteer
 
-RUN python3 -m venv /root/venv
-ENV PATH="/root/venv/bin:$PATH"
+RUN python3 -m venv ~/venv
+ENV PATH="~/venv/bin:$PATH"
 
 # Install the Python package within the virtual environment
 RUN pip install -U pymupdf4llm
