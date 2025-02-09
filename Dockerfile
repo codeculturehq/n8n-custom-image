@@ -24,7 +24,13 @@ RUN apk add --no-cache \
       py3-pip \
       python3-dev \
       py3-setuptools \
-      pandoc
+      pandoc \
+      gcc \
+      musl-dev \
+      linux-headers \
+      make \
+      g++ \
+      clang-dev
 
 # Tell Puppeteer to skip installing Chrome. We'll be using the installed package.
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
@@ -35,11 +41,11 @@ RUN npm install -g cryptr
 USER node
 
 # Install custom n8n nodes
-RUN mkdir -p ~/.n8n/nodes && mkdir -p ~/venv
+RUN mkdir -p ~/.n8n/nodes && mkdir -p ~/pymupdfllm
 RUN cd ~/.n8n/nodes && npm install --production --force n8n-nodes-puppeteer
 
-RUN python3 -m venv ~/venv
-ENV PATH="~/venv/bin:$PATH"
+# RUN python3 -m venv ~/venv
+# ENV PATH="~/venv/bin:$PATH"
 
 # Install the Python package within the virtual environment
-RUN pip install -U pymupdf4llm
+RUN pip install --target ~/pymupdfllm -U pymupdf4llm
