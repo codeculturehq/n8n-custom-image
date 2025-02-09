@@ -48,4 +48,4 @@ RUN cd ~/.n8n/nodes && npm install --production --force n8n-nodes-puppeteer
 # ENV PATH="~/venv/bin:$PATH"
 
 # Install the Python package within the virtual environment
-RUN pip install -U --break-system-packages --only-binary :all: --target ~/pymupdfllm -U pymupdf4llm
+RUN pip install -U --break-system-packages --only-binary :all: --target ~/pymupdfllm pymupdf4llm
