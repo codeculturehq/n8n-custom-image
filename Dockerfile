@@ -34,9 +34,17 @@ RUN npm install -g cryptr
 
 USER node
 
+# Create the directory and install npm package
 RUN mkdir -p ~/.n8n/nodes
+RUN cd ~/.n8n/nodes && npm install --production --force n8n-nodes-puppeteer
 
-# Add custom n8n nodes from Codely
-RUN cd ~/.n8n/nodes && \
-    npm install --production --force n8n-nodes-puppeteer \
-    && pip install -U pymupdf4llm
+# Create a virtual environment for Python packages
+RUN python3 -m venv /venv
+
+# Activate the virtual environment and install pymupdf4llm
+# Note: In a Dockerfile, each RUN command is isolated; to ensure that the virtual environment is used,
+# you might need to update the PATH in subsequent commands.
+RUN . /venv/bin/activate && pip install -U pymupdf4llm
+
+# Optionally, add the virtual environment to PATH for later steps:
+ENV PATH="/venv/bin:$PATH"
