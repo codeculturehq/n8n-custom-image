@@ -38,11 +38,8 @@ USER node
 RUN mkdir -p ~/.n8n/nodes
 RUN cd ~/.n8n/nodes && npm install --production --force n8n-nodes-puppeteer
 
-# Create a virtual environment in /opt/venv to avoid permission issues
-RUN python3 -m venv /opt/venv
-
-# Ensure the virtual environment is used in subsequent commands
-ENV PATH="/opt/venv/bin:$PATH"
+RUN python3 -m venv /root/venv
+ENV PATH="/root/venv/bin:$PATH"
 
 # Install the Python package within the virtual environment
 RUN pip install -U pymupdf4llm
