@@ -9,7 +9,7 @@ jobs:
   check-new-release:
     runs-on: ubuntu-latest
 
-    timeout-minutes: 5
+    timeout-minutes: 10
 
     # Output mapping needed to share data between jobs. Separated jobs to reuse the build-and-push.yml workflow.
     outputs:
