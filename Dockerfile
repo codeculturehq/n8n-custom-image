@@ -46,10 +46,11 @@ RUN curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o 
 RUN cd /usr/local/lib/node_modules/n8n && \
     npm install @endcycles/n8n-nodes-youtube-transcript && \
     npm install n8n-nodes-puppeteer && \
-    n8n-nodes-advanced-flow && \
-    n8n-nodes-elevenlabs && \
-    n8n-nodes-firecrawl && \
-    n8n-nodes-browserless
+    npm install n8n-nodes-advanced-flow && \
+    npm install n8n-nodes-elevenlabs && \
+    npm install n8n-nodes-firecrawl && \
+    npm install n8n-nodes-browserless && \
+    npm install n8n-nodes-mcp-client
     
 # Install custom n8n nodes
 RUN mkdir -p ~/pymupdfllm 
