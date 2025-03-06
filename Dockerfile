@@ -38,13 +38,26 @@ ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
 
 RUN npm install -g cryptr
 
-USER node
+# Install yt-dlp
+RUN curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/local/bin/yt-dlp \
+    && chmod a+rx /usr/local/bin/yt-dlp
 
+# Install the community node
+RUN cd /usr/local/lib/node_modules/n8n && \
+    npm install @endcycles/n8n-nodes-youtube-transcriptn && \
+    npm install n8n-nodes-puppeteer && \
+    n8n-nodes-advanced-flow && \
+    n8n-nodes-elevenlabs && \
+    n8n-nodes-firecrawl && \
+    n8n-nodes-browserless
+    
 # Install custom n8n nodes
-RUN mkdir -p ~/pymupdfllm && cd ~/.n8n/nodes && npm i --omit=dev --force n8n-nodes-puppeteer n8n-nodes-advanced-flow n8n-nodes-elevenlabs n8n-nodes-firecrawl n8n-nodes-youtube-transcript n8n-nodes-browserless
+RUN mkdir -p ~/pymupdfllm 
 
 # RUN python3 -m venv ~/venv
 # ENV PATH="~/venv/bin:$PATH"
 
 # Install the Python package within the virtual environment
 RUN pip install -U --break-system-packages --only-binary :all: --target ~/pymupdfllm pymupdf4llm
+
+USER node
