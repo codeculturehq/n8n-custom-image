@@ -41,8 +41,7 @@ RUN npm install -g cryptr
 USER node
 
 # Install custom n8n nodes
-RUN cd ~/.n8n/node && mkdir custom && mkdir -p ~/pymupdfllm
-RUN cd ~/.n8n/node/custom && npm install --production --force n8n-nodes-puppeteer n8n-nodes-advanced-flow n8n-nodes-elevenlabs n8n-nodes-firecrawl n8n-nodes-youtube-transcript n8n-nodes-browserless
+RUN mkdir -p ~/pymupdfllm && cd ~/.n8n/nodes && npm i --production --force n8n-nodes-puppeteer n8n-nodes-advanced-flow n8n-nodes-elevenlabs n8n-nodes-firecrawl n8n-nodes-youtube-transcript n8n-nodes-browserless
 
 # RUN python3 -m venv ~/venv
 # ENV PATH="~/venv/bin:$PATH"
