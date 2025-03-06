@@ -44,7 +44,7 @@ RUN curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o 
 
 # Install the community node
 RUN cd /usr/local/lib/node_modules/n8n && \
-    npm install @endcycles/n8n-nodes-youtube-transcriptn && \
+    npm install @endcycles/n8n-nodes-youtube-transcript && \
     npm install n8n-nodes-puppeteer && \
     n8n-nodes-advanced-flow && \
     n8n-nodes-elevenlabs && \
