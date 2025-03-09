@@ -54,5 +54,5 @@ RUN mkdir -p ~/pymupdfllm
 # RUN pip install -U --break-system-packages --only-binary :all: --target ~/pymupdfllm pymupdf4llm
 RUN python3 -m venv /home/node/venv
 ENV PATH="/home/node/venv/bin:${PATH}"
-RUN pip install -U --break-system-packages --only-binary :all: pymupdf4llm
+RUN pip install -U --break-system-packages pymupdf4llm
 # RUN pip install -U --break-system-packages --only-binary :all: pymupdf4llm
