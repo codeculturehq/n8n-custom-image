@@ -1,4 +1,4 @@
-ARG N8N_VERSION=latest
+ARG CRAWL4AI_VERSION=latest
 FROM n8nio/n8n:${N8N_VERSION}
 ENV PYTHONUNBUFFERED=1
 
@@ -46,13 +46,13 @@ RUN curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o 
 RUN cd /usr/local/lib/node_modules/n8n && \
     npm install @endcycles/n8n-nodes-youtube-transcript n8n-nodes-puppeteer n8n-nodes-advanced-flow n8n-nodes-elevenlabs n8n-nodes-firecrawl n8n-nodes-browserless n8n-nodes-mcp n8n-nodes-playwright
     
+USER node
 # Install custom n8n nodes
 RUN mkdir -p ~/pymupdfllm 
 
-# RUN python3 -m venv ~/venv
-# ENV PATH="~/venv/bin:$PATH"
-
 # Install the Python package within the virtual environment
-RUN pip install -U --break-system-packages --only-binary :all: --target ~/pymupdfllm pymupdf4llm
-
-USER node
+# RUN pip install -U --break-system-packages --only-binary :all: --target ~/pymupdfllm pymupdf4llm
+RUN python3 -m venv /home/node/venv
+ENV PATH="/home/node/venv/bin:${PATH}"
+RUN pip install -U --break-system-packages --only-binary :all: pymupdf4llm
+# RUN pip install -U --break-system-packages --only-binary :all: pymupdf4llm
