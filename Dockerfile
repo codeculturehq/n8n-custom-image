@@ -32,8 +32,6 @@ RUN apk add --no-cache \
       g++ \
       clang-dev
 
-USER node
-
 # Tell Puppeteer to skip installing Chrome. We'll be using the installed package.
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
     PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
@@ -48,6 +46,7 @@ RUN curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o 
 RUN cd /usr/local/lib/node_modules/n8n && \
     npm install @endcycles/n8n-nodes-youtube-transcript n8n-nodes-puppeteer n8n-nodes-advanced-flow n8n-nodes-elevenlabs n8n-nodes-firecrawl n8n-nodes-browserless n8n-nodes-mcp n8n-nodes-playwright
   
+USER node
 
 # Install custom n8n nodes
 #RUN mkdir -p ~/pymupdfllm 
