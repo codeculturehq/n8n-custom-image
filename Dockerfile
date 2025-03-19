@@ -32,6 +32,8 @@ RUN apk add --no-cache \
       g++ \
       clang-dev
 
+USER node
+
 # Tell Puppeteer to skip installing Chrome. We'll be using the installed package.
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
     PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
@@ -44,15 +46,15 @@ RUN curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o 
 
 # Install the community node
 RUN cd /usr/local/lib/node_modules/n8n && \
-    npm install @endcycles/n8n-nodes-youtube-transcript n8n-nodes-puppeteer n8n-nodes-advanced-flow n8n-nodes-elevenlabs n8n-nodes-firecrawl n8n-nodes-browserless n8n-nodes-mcp n8n-nodes-playwright
-    
-USER node
+    npm install @endcycles/n8n-nodes-youtube-transcript n8n-nodes-puppeteer n8n-nodes-advanced-flow n8n-nodes-elevenlabs n8n-nodes-firecrawl n8n-nodes-browserless n8n-nodes-mcp n8n-nodes-playwright n8n-nodes-mcp-client
+  
+
 # Install custom n8n nodes
-RUN mkdir -p ~/pymupdfllm 
+#RUN mkdir -p ~/pymupdfllm 
 
 # Install the Python package within the virtual environment
 # RUN pip install -U --break-system-packages --only-binary :all: --target ~/pymupdfllm pymupdf4llm
 RUN python3 -m venv /home/node/venv
 ENV PATH="/home/node/venv/bin:${PATH}"
-RUN pip install -U --break-system-packages pymupdf4llm
+# RUN pip install -U --break-system-packages pymupdf4llm
 # RUN pip install -U --break-system-packages --only-binary :all: pymupdf4llm
