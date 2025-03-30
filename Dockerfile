@@ -30,6 +30,10 @@ RUN apk add --no-cache \
       linux-headers \
       make \
       g++ \
+      texlive-latex-base \
+      texlive-fonts-recommended \
+      texlive-extra-utils \
+      texlive-latex-extra \
       clang-dev
 
 # Tell Puppeteer to skip installing Chrome. We'll be using the installed package.
