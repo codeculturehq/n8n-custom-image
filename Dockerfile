@@ -46,7 +46,7 @@ RUN curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o 
 # Install the community node
 RUN cd /usr/local/lib/node_modules/n8n && \
     npm install @endcycles/n8n-nodes-youtube-transcript n8n-nodes-puppeteer n8n-nodes-advanced-flow n8n-nodes-elevenlabs n8n-nodes-browserless n8n-nodes-mcp n8n-nodes-playwright
-  
+
 USER node
 
 # Install custom n8n nodes
@@ -56,5 +56,6 @@ USER node
 # RUN pip install -U --break-system-packages --only-binary :all: --target ~/pymupdfllm pymupdf4llm
 RUN python3 -m venv /home/node/venv
 ENV PATH="/home/node/venv/bin:${PATH}"
+RUN python3 -m pip install --user --break-system-changes pipx
 # RUN pip install -U --break-system-packages pymupdf4llm
 # RUN pip install -U --break-system-packages --only-binary :all: pymupdf4llm
