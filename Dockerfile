@@ -31,6 +31,7 @@ RUN apk add --no-cache \
       make \
       g++ \
       texlive \
+      ffmpeg \
       clang-dev
 
 # Tell Puppeteer to skip installing Chrome. We'll be using the installed package.
