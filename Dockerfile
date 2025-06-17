@@ -33,7 +33,12 @@ RUN apk add --no-cache \
       g++ \
       texlive \
       ffmpeg \
-      clang-dev
+      clang-dev \
+      texlive-xetex \
+      texmf-dist-latexextra \
+      texmf-dist-fontsextra \
+      fontconfig ttf-dejavu
+
 
 # Tell Puppeteer to skip installing Chrome. We'll be using the installed package.
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
