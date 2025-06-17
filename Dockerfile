@@ -7,6 +7,9 @@ RUN if [ -z "$N8N_VERSION" ] ; then echo "✋ The N8N_VERSION argument is missin
 
 USER root
 
+#RUN echo "https://dl-cdn.alpinelinux.org/alpine/$(. /etc/os-release; echo $VERSION_ID)/community" \
+# >> /etc/apk/repositories && apk update
+  
 # Installs latest Chromium (100) package.
 RUN apk add --no-cache \
       chromium \
@@ -34,7 +37,7 @@ RUN apk add --no-cache \
       texlive \
       ffmpeg \
       clang-dev \
-      texlive-full
+      tectonic
 
 
 # Tell Puppeteer to skip installing Chrome. We'll be using the installed package.
