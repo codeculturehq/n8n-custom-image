@@ -34,10 +34,7 @@ RUN apk add --no-cache \
       texlive \
       ffmpeg \
       clang-dev \
-      texlive-xetex \
-      texmf-dist-latexextra \
-      texmf-dist-fontsextra \
-      fontconfig ttf-dejavu
+      texlive-full
 
 
 # Tell Puppeteer to skip installing Chrome. We'll be using the installed package.
