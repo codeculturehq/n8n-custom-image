@@ -4,6 +4,10 @@ on:
   push:
     branches:
       - main
+    paths:
+      - 'Dockerfile'
+      - '.github/workflows/build-and-push.yml'
+      - '.github/workflows/create-new-release-on-push.yml'
 
 jobs:
   check-new-release:
@@ -18,6 +22,28 @@ jobs:
       next_version_suffix: ${{ steps.new_release_check.outputs.next_version_suffix }}
 
     steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: 🔍 Check if relevant files changed
+        id: check_changes
+        run: |
+          # Check if Dockerfile or workflow files changed in the last commit
+          changed_files=$(git diff --name-only HEAD^ HEAD)
+          echo "Changed files:"
+          echo "$changed_files"
+          
+          relevant_changes=false
+          if echo "$changed_files" | grep -E "(Dockerfile|\.github/workflows/)" > /dev/null; then
+            relevant_changes=true
+            echo "✅ Relevant files changed, proceeding with build"
+          else
+            echo "❌ No relevant files changed, skipping build"
+          fi
+          echo "relevant_changes=$relevant_changes" >> $GITHUB_OUTPUT
+
       - name: 👀 Get the latest codeculture n8n custom image stable release
         id: custom_image_release
         uses: pozetroninc/github-action-get-latest-release@v0.8.0
@@ -44,7 +70,14 @@ jobs:
           n8n_version=$(echo "${{ steps.n8n_release.outputs.last_version }}" | sed 's/n8n@//g')
 
           latest_version=$(echo -e "$custom_version\n$n8n_version" | sort -V | tail -n1)
-          echo "has_new_release=true" >> $GITHUB_OUTPUT
+          
+          # Only set has_new_release=true if there are relevant changes
+          if [ "${{ steps.check_changes.outputs.relevant_changes }}" = "true" ]; then
+            echo "has_new_release=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_new_release=false" >> $GITHUB_OUTPUT
+            echo "👍 No relevant changes detected. Skipping build."
+          fi
           
           # Debug print
           echo "custom_version_orig=$custom_version_orig"
