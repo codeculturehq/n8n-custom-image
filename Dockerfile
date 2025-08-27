@@ -10,8 +10,8 @@ USER root
 #RUN echo "https://dl-cdn.alpinelinux.org/alpine/$(. /etc/os-release; echo $VERSION_ID)/community" \
 # >> /etc/apk/repositories && apk update
   
-# Installs latest Chromium (100) package.
-RUN apk upgrade --no-cache && \
+RUN sed -i 's/v3.22/v3.20/g' /etc/apk/repositories && \
+      apk upgrade --no-cache && \
       apk add --no-cache \
       chromium \
       nss \
