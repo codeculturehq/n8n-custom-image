@@ -11,7 +11,8 @@ USER root
 # >> /etc/apk/repositories && apk update
   
 # Installs latest Chromium (100) package.
-RUN apk add --no-cache \
+RUN apk upgrade --no-cache && \
+      apk add --no-cache \
       chromium \
       nss \
       freetype \
@@ -24,12 +25,10 @@ RUN apk add --no-cache \
       zlib-dev \
       libffi-dev \
       openssl-dev \
-      musl-dev \
       py3-pip \
       python3-dev \
       py3-setuptools \
       pandoc \
-      gcc \
       musl-dev \
       linux-headers \
       make \
