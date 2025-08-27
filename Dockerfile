@@ -7,34 +7,31 @@ RUN if [ -z "$N8N_VERSION" ] ; then echo "✋ The N8N_VERSION argument is missin
 
 USER root
 
-RUN echo "https://dl-cdn.alpinelinux.org/alpine/v3.22/main" > /etc/apk/repositories && \
-    echo "https://dl-cdn.alpinelinux.org/alpine/v3.22/community" >> /etc/apk/repositories && \
-      apk update && \
-      apk add --no-cache \
-      chromium \
-      nss \
-      freetype \
-      harfbuzz \
-      ttf-freefont \
-      yarn \
-      curl \
-      gcc \
-      make \
-      zlib-dev \
-      libffi-dev \
-      openssl-dev \
-      py3-pip \
-      python3-dev \
-      py3-setuptools \
-      pandoc \
-      musl-dev \
-      linux-headers \
-      make \
-      g++ \
-      texlive \
-      ffmpeg \
-      clang-dev \
-      tectonic
+RUN apk upgrade --no-cache libssl3 libcrypto3 openssl && \
+    apk add --no-cache \
+    chromium \
+    nss \
+    freetype \
+    harfbuzz \
+    ttf-freefont \
+    yarn \
+    curl \
+    gcc \
+    make \
+    zlib-dev \
+    libffi-dev \
+    openssl-dev \
+    py3-pip \
+    python3-dev \
+    py3-setuptools \
+    pandoc \
+    musl-dev \
+    linux-headers \
+    g++ \
+    texlive \
+    ffmpeg \
+    clang-dev \
+    tectonic
 
 
 # Tell Puppeteer to skip installing Chrome. We'll be using the installed package.
