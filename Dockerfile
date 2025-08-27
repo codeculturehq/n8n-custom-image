@@ -7,11 +7,9 @@ RUN if [ -z "$N8N_VERSION" ] ; then echo "✋ The N8N_VERSION argument is missin
 
 USER root
 
-#RUN echo "https://dl-cdn.alpinelinux.org/alpine/$(. /etc/os-release; echo $VERSION_ID)/community" \
-# >> /etc/apk/repositories && apk update
-  
-RUN sed -i 's/v3.22/v3.20/g' /etc/apk/repositories && \
-      apk upgrade --no-cache && \
+RUN echo "https://dl-cdn.alpinelinux.org/alpine/v$(cat /etc/alpine-release | cut -d'.' -f1,2)/main" > /etc/apk/repositories && \
+    echo "https://dl-cdn.alpinelinux.org/alpine/v$(cat /etc/alpine-release | cut -d'.' -f1,2)/community" >> /etc/apk/repositories && \
+      apk update && \
       apk add --no-cache \
       chromium \
       nss \
