@@ -25,9 +25,9 @@ RUN apk update && apk upgrade --no-cache openssl libssl3 libcrypto3 \
     #zlib-dev \
     #libffi-dev \
     #openssl-dev \
-    #py3-pip \
-    #python3-dev \
-    #py3-setuptools \
+    py3-pip \
+    python3 \
+    py3-setuptools \
     pandoc \
     ca-certificates \
     #musl-dev \
