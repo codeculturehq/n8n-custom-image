@@ -7,8 +7,12 @@ RUN if [ -z "$N8N_VERSION" ] ; then echo "✋ The N8N_VERSION argument is missin
 
 USER root
 
-RUN apk upgrade --no-cache libssl3 libcrypto3 openssl && \
-    apk add --no-cache \
+RUN printf '%s\n' \
+  "https://dl-cdn.alpinelinux.org/alpine/v3.22/main" \
+  "https://dl-cdn.alpinelinux.org/alpine/v3.22/community" > /etc/apk/repositories
+
+RUN apk update && apk upgrade --no-cache openssl libssl3 libcrypto3 \
+    && apk add --no-cache \
     chromium \
     nss \
     freetype \
@@ -16,21 +20,22 @@ RUN apk upgrade --no-cache libssl3 libcrypto3 openssl && \
     ttf-freefont \
     yarn \
     curl \
-    gcc \
-    make \
-    zlib-dev \
-    libffi-dev \
-    openssl-dev \
-    py3-pip \
-    python3-dev \
-    py3-setuptools \
+    #gcc \
+    #make \
+    #zlib-dev \
+    #libffi-dev \
+    #openssl-dev \
+    #py3-pip \
+    #python3-dev \
+    #py3-setuptools \
     pandoc \
-    musl-dev \
-    linux-headers \
-    g++ \
+    ca-certificates \
+    #musl-dev \
+    #linux-headers \
+    #g++ \
     texlive \
     ffmpeg \
-    clang-dev \
+    #clang-dev \
     tectonic
 
 
