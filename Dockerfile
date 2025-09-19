@@ -33,15 +33,8 @@ RUN apk update && apk upgrade --no-cache openssl libssl3 libcrypto3 \
     #musl-dev \
     #linux-headers \
     #g++ \
-    texlive \
-    # Extra TeX collections provide the LaTeX packages/fonts Eisvogel depends on
-    texmf-dist-latexextra \
-    texmf-dist-fontsextra \
-    texmf-dist-langcjk \
-    texmf-dist-langextra \
-    texmf-dist-luatex \
-    texmf-dist-xetex \
-    texmf-dist-mathscience \
+    # texlive-full bundles the Eisvogel template dependencies without needing tlmgr
+    texlive-full \
     ffmpeg \
     #clang-dev \
     tectonic
