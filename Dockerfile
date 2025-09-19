@@ -33,8 +33,18 @@ RUN apk update && apk upgrade --no-cache openssl libssl3 libcrypto3 \
     #musl-dev \
     #linux-headers \
     #g++ \
-    # texlive-full bundles the Eisvogel template dependencies without needing tlmgr
-    texlive-full \
+    # TeX Live components needed for the Eisvogel Pandoc template
+    texlive \
+    texlive-xetex \
+    icu-data-full \
+    texmf-dist-latexextra \
+    texmf-dist-fontsextra \
+    texmf-dist-lang \
+    texmf-dist-langarabic \
+    texmf-dist-langcjk \
+    texmf-dist-luatex \
+    texmf-dist-mathscience \
+    texmf-dist-plaingeneric \
     ffmpeg \
     #clang-dev \
     tectonic
