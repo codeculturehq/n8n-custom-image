@@ -34,7 +34,6 @@ RUN apk update && apk upgrade --no-cache openssl libssl3 libcrypto3 \
     #linux-headers \
     #g++ \
     texlive \
-    texlive-latex-extra \
     ffmpeg \
     #clang-dev \
     tectonic
