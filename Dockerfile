@@ -34,6 +34,14 @@ RUN apk update && apk upgrade --no-cache openssl libssl3 libcrypto3 \
     #linux-headers \
     #g++ \
     texlive \
+    # Extra TeX collections provide the LaTeX packages/fonts Eisvogel depends on
+    texmf-dist-latexextra \
+    texmf-dist-fontsextra \
+    texmf-dist-langcjk \
+    texmf-dist-langextra \
+    texmf-dist-luatex \
+    texmf-dist-xetex \
+    texmf-dist-mathscience \
     ffmpeg \
     #clang-dev \
     tectonic
@@ -48,8 +56,6 @@ RUN npm install -g cryptr
 # Install yt-dlp
 RUN curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/local/bin/yt-dlp \
     && chmod a+rx /usr/local/bin/yt-dlp
-
-RUN tlmgr install soul adjustbox babel-german background bidi collectbox csquotes everypage filehook footmisc footnotebackref framed fvextra letltxmacro ly1 mdframed mweights needspace pagecolor sourcecodepro sourcesanspro titling ucharcat unicode-math upquote xecjk xurl zref draftwatermark
 
 # Install the community node
 # RUN cd /usr/local/lib/node_modules/n8n && \
