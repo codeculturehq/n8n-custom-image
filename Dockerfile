@@ -46,7 +46,7 @@ RUN apk update && apk upgrade --no-cache openssl libssl3 libcrypto3 \
     texmf-dist-mathscience \
     texmf-dist-plaingeneric \
     ffmpeg \
-    git-all \
+    git \
     #clang-dev \
     tectonic
 
