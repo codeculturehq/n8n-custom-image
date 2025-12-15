@@ -1,4 +1,4 @@
-name: 👀 Check for new n8n stable releases and builds a new custom image release if needed
+name: 👀 Check for new n8n stable releases and builds new custom image releases if needed
 
 on:
   schedule:
@@ -6,63 +6,91 @@ on:
   workflow_dispatch:
 
 jobs:
-  check-new-release:
+  check-releases:
     runs-on: ubuntu-latest
-
     timeout-minutes: 10
 
-    # Output mapping needed to share data between jobs. Separated jobs to reuse the build-and-push.yml workflow.
+    strategy:
+      fail-fast: false
+      matrix:
+        major_version: ['1', '2']
+
     outputs:
-      has_new_release: ${{ steps.new_release_check.outputs.has_new_release }}
-      version_to_release: ${{ steps.n8n_version.outputs.version_to_release }}
+      v1_has_new_release: ${{ steps.check_v1.outputs.has_new_release }}
+      v1_version: ${{ steps.check_v1.outputs.version }}
+      v2_has_new_release: ${{ steps.check_v2.outputs.has_new_release }}
+      v2_version: ${{ steps.check_v2.outputs.version }}
 
     steps:
-      - name: 👀 Get the latest codeculture n8n custom image stable release
-        id: custom_image_release
-        uses: pozetroninc/github-action-get-latest-release@v0.8.0
-        with:
-          repository: codeculturehq/n8n-custom-image
-          excludes: prerelease,draft
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: 🆕 Get the latest n8n release
-        id: n8n_release
-        uses: dvershinin/lastversion-action@main
-        with:
-          repository: 'https://github.com/n8n-io/n8n'
-          extra_args: --pre
-
-      - name: 🤲 Check if it is a newer n8n release
-        id: new_release_check
+      - name: 🔍 Get latest n8n v${{ matrix.major_version }} release
+        id: get_n8n_release
         run: |
-          echo "👀 Latest Codely custom image release: ${{ steps.custom_image_release.outputs.release }}"
-          echo "🆕 Latest n8n release: ${{ steps.n8n_release.outputs.last_version }}"
+          # Fetch all releases and filter by major version
+          LATEST=$(curl -s "https://api.github.com/repos/n8n-io/n8n/releases" | \
+            jq -r '[.[] | select(.tag_name | startswith("n8n@${{ matrix.major_version }}.")) | select(.prerelease == false)] | .[0].tag_name' | \
+            sed 's/n8n@//')
 
-          custom_version_orig=$(echo "${{ steps.custom_image_release.outputs.release }}" | sed 's/n8n@//g')
-          custom_version=$(echo "$custom_version_orig" | sed 's/-[0-9]*//g')  # Remove the suffix
-          n8n_version=$(echo "${{ steps.n8n_release.outputs.last_version }}" | sed 's/n8n@//g')
+          echo "Latest n8n v${{ matrix.major_version }}: $LATEST"
+          echo "version=$LATEST" >> $GITHUB_OUTPUT
 
-          latest_version=$(echo -e "$custom_version\n$n8n_version" | sort -V | tail -n1)
+      - name: 👀 Get our latest v${{ matrix.major_version }} custom image release
+        id: get_custom_release
+        run: |
+          # Get our releases and find the latest for this major version
+          OUR_LATEST=$(curl -s "https://api.github.com/repos/codeculturehq/n8n-custom-image/releases" | \
+            jq -r '[.[] | select(.tag_name | startswith("n8n@${{ matrix.major_version }}.")) | select(.prerelease == false)] | .[0].tag_name // "none"' | \
+            sed 's/n8n@//' | sed 's/-[0-9]*$//')
 
-          if [ "$custom_version" != "$latest_version" ]; then
-            echo "has_new_release=true" >> $GITHUB_OUTPUT
-            echo "🤩 New release detected! Releasing new custom image version in 1, 2…"
-          else
+          echo "Our latest v${{ matrix.major_version }}: $OUR_LATEST"
+          echo "version=$OUR_LATEST" >> $GITHUB_OUTPUT
+
+      - name: 🤲 Check if new release needed for v${{ matrix.major_version }}
+        id: check_v${{ matrix.major_version }}
+        run: |
+          N8N_VERSION="${{ steps.get_n8n_release.outputs.version }}"
+          OUR_VERSION="${{ steps.get_custom_release.outputs.version }}"
+
+          echo "Comparing: n8n=$N8N_VERSION vs ours=$OUR_VERSION"
+
+          if [ -z "$N8N_VERSION" ] || [ "$N8N_VERSION" = "null" ]; then
+            echo "No n8n v${{ matrix.major_version }} release found"
             echo "has_new_release=false" >> $GITHUB_OUTPUT
-            echo "👍 Release has not changed or it is previous to the current one. Doing nothing."
+            exit 0
           fi
 
-      - name: 🔡 Remove 'n8n@' from release name to get the version
-        id: n8n_version
-        if: steps.new_release_check.outputs.has_new_release == 'true'
-        run: |
-          version_to_release=$(echo "${{ steps.n8n_release.outputs.last_version }}" | sed 's/n8n@//g')
-          echo "version_to_release=$version_to_release" >> $GITHUB_OUTPUT
+          if [ "$OUR_VERSION" = "none" ] || [ "$OUR_VERSION" = "null" ]; then
+            echo "🆕 First release for v${{ matrix.major_version }}!"
+            echo "has_new_release=true" >> $GITHUB_OUTPUT
+            echo "version=$N8N_VERSION" >> $GITHUB_OUTPUT
+            exit 0
+          fi
 
-  build-and-push-new-docker-image:
-    needs: check-new-release
-    if: ${{ needs.check-new-release.outputs.has_new_release == 'true' }}
+          # Compare versions
+          LATEST=$(echo -e "$OUR_VERSION\n$N8N_VERSION" | sort -V | tail -n1)
+
+          if [ "$OUR_VERSION" != "$LATEST" ]; then
+            echo "🤩 New v${{ matrix.major_version }} release: $N8N_VERSION"
+            echo "has_new_release=true" >> $GITHUB_OUTPUT
+            echo "version=$N8N_VERSION" >> $GITHUB_OUTPUT
+          else
+            echo "👍 v${{ matrix.major_version }} is up to date"
+            echo "has_new_release=false" >> $GITHUB_OUTPUT
+          fi
+
+  build-v1:
+    needs: check-releases
+    if: ${{ needs.check-releases.outputs.v1_has_new_release == 'true' }}
     uses: ./.github/workflows/build-and-push.yml
     secrets: inherit
     with:
-      n8n_version: ${{ needs.check-new-release.outputs.version_to_release }}
+      n8n_version: ${{ needs.check-releases.outputs.v1_version }}
+      major_version: '1'
+
+  build-v2:
+    needs: check-releases
+    if: ${{ needs.check-releases.outputs.v2_has_new_release == 'true' }}
+    uses: ./.github/workflows/build-and-push.yml
+    secrets: inherit
+    with:
+      n8n_version: ${{ needs.check-releases.outputs.v2_version }}
+      major_version: '2'

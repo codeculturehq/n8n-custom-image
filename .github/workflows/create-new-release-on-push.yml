@@ -1,4 +1,4 @@
-name: Create new release on push
+name: 🔄 Rebuild images on Dockerfile/workflow changes
 
 on:
   push:
@@ -10,16 +10,16 @@ on:
       - '.github/workflows/create-new-release-on-push.yml'
 
 jobs:
-  check-new-release:
+  check-and-prepare:
     runs-on: ubuntu-latest
-
     timeout-minutes: 10
 
-    # Output mapping needed to share data between jobs. Separated jobs to reuse the build-and-push.yml workflow.
     outputs:
-      has_new_release: ${{ steps.new_release_check.outputs.has_new_release }}
-      version_to_release: ${{ steps.n8n_version.outputs.version_to_release }}
-      next_version_suffix: ${{ steps.new_release_check.outputs.next_version_suffix }}
+      should_build: ${{ steps.check_changes.outputs.relevant_changes }}
+      v1_version: ${{ steps.versions.outputs.v1_version }}
+      v1_suffix: ${{ steps.versions.outputs.v1_suffix }}
+      v2_version: ${{ steps.versions.outputs.v2_version }}
+      v2_suffix: ${{ steps.versions.outputs.v2_suffix }}
 
     steps:
       - name: 📥 Checkout repository
@@ -30,93 +30,80 @@ jobs:
       - name: 🔍 Check if relevant files changed
         id: check_changes
         run: |
-          # Check if Dockerfile or workflow files changed in the last commit
           changed_files=$(git diff --name-only HEAD^ HEAD)
           echo "Changed files:"
           echo "$changed_files"
-          
+
           relevant_changes=false
           if echo "$changed_files" | grep -E "(Dockerfile|\.github/workflows/)" > /dev/null; then
             relevant_changes=true
-            echo "✅ Relevant files changed, proceeding with build"
+            echo "✅ Relevant files changed, proceeding with builds"
           else
-            echo "❌ No relevant files changed, skipping build"
+            echo "❌ No relevant files changed, skipping builds"
           fi
           echo "relevant_changes=$relevant_changes" >> $GITHUB_OUTPUT
 
-      - name: 👀 Get the latest codeculture n8n custom image stable release
-        id: custom_image_release
-        uses: pozetroninc/github-action-get-latest-release@v0.8.0
-        with:
-          repository: codeculturehq/n8n-custom-image
-          excludes: prerelease,draft
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: 🆕 Get the latest n8n release
-        id: n8n_release
-        uses: dvershinin/lastversion-action@main
-        with:
-          repository: 'https://github.com/n8n-io/n8n'
-          extra_args: --pre
-
-      - name: 🤲 Check if it is a newer n8n release
-        id: new_release_check
+      - name: 🔢 Get versions and calculate suffixes
+        id: versions
+        if: steps.check_changes.outputs.relevant_changes == 'true'
         run: |
-          echo "👀 Latest Codely custom image release: ${{ steps.custom_image_release.outputs.release }}"
-          echo "🆕 Latest n8n release: ${{ steps.n8n_release.outputs.last_version }}"
+          # Get latest n8n releases for v1 and v2
+          V1_LATEST=$(curl -s "https://api.github.com/repos/n8n-io/n8n/releases" | \
+            jq -r '[.[] | select(.tag_name | startswith("n8n@1.")) | select(.prerelease == false)] | .[0].tag_name' | \
+            sed 's/n8n@//')
+          V2_LATEST=$(curl -s "https://api.github.com/repos/n8n-io/n8n/releases" | \
+            jq -r '[.[] | select(.tag_name | startswith("n8n@2.")) | select(.prerelease == false)] | .[0].tag_name' | \
+            sed 's/n8n@//')
 
-          custom_version_orig=$(echo "${{ steps.custom_image_release.outputs.release }}" | sed 's/n8n@//g')
-          custom_version=$(echo "$custom_version_orig" | sed 's/-[0-9]*//g')  # Remove the suffix
-          n8n_version=$(echo "${{ steps.n8n_release.outputs.last_version }}" | sed 's/n8n@//g')
+          echo "Latest n8n v1: $V1_LATEST"
+          echo "Latest n8n v2: $V2_LATEST"
 
-          latest_version=$(echo -e "$custom_version\n$n8n_version" | sort -V | tail -n1)
-          
-          # Only set has_new_release=true if there are relevant changes
-          if [ "${{ steps.check_changes.outputs.relevant_changes }}" = "true" ]; then
-            echo "has_new_release=true" >> $GITHUB_OUTPUT
+          # Get our latest releases
+          OUR_RELEASES=$(curl -s "https://api.github.com/repos/codeculturehq/n8n-custom-image/releases")
+
+          # Calculate suffix for v1
+          OUR_V1=$(echo "$OUR_RELEASES" | jq -r '[.[] | select(.tag_name | startswith("n8n@1."))] | .[0].tag_name // "none"' | sed 's/n8n@//')
+          if [ "$OUR_V1" != "none" ] && [ "$(echo "$OUR_V1" | sed 's/-[0-9]*$//')" = "$V1_LATEST" ]; then
+            # Same version, increment suffix
+            CURRENT_SUFFIX=$(echo "$OUR_V1" | grep -o '\-[0-9]*$' | tr -d '-' || echo "0")
+            V1_SUFFIX="-$((CURRENT_SUFFIX + 1))"
           else
-            echo "has_new_release=false" >> $GITHUB_OUTPUT
-            echo "👍 No relevant changes detected. Skipping build."
-          fi
-          
-          # Debug print
-          echo "custom_version_orig=$custom_version_orig"
-          echo "custom_version=$custom_version"
-          echo "n8n_version=$n8n_version"
-          
-          # Calculate the next_version_suffix to compare with the new release
-          # If the custom_version does not equal the latest_version, then it is a new release and we don't need a suffix
-          if [ "$custom_version" != "$n8n_version" ]; then
-              echo "next_version_suffix=" >> $GITHUB_OUTPUT
-          else
-              # If the custom_version equals the latest_version, then it is a new release and we need to increment the suffix
-              # If there is no suffix present we start with 1
-              # Check if we have a - first
-              has_suffix=$(echo "$custom_version_orig" | sed 's/[^-]//g')
-              if [ -z "$has_suffix" ]; then
-                  suffix="-1"
-              else
-                  suffix=$(echo "$custom_version_orig" | grep -o '[0-9]*$')
-                  suffix="-$((suffix + 1))"
-              fi
-              
-              echo "next_version_suffix=$suffix"
-              echo "next_version_suffix=$suffix" >> $GITHUB_OUTPUT
+            V1_SUFFIX=""
           fi
 
-      - name: 🔡 Remove 'n8n@' from release name to get the version
-        id: n8n_version
-        if: steps.new_release_check.outputs.has_new_release == 'true'
-        run: |
-          version_to_release=$(echo "${{ steps.n8n_release.outputs.last_version }}" | sed 's/n8n@//g')
-          echo "version_to_release=$version_to_release" >> $GITHUB_OUTPUT
-          echo "next_version_suffix=${{ steps.new_release_check.outputs.next_version_suffix }}" >> $GITHUB_OUTPUT
+          # Calculate suffix for v2
+          OUR_V2=$(echo "$OUR_RELEASES" | jq -r '[.[] | select(.tag_name | startswith("n8n@2."))] | .[0].tag_name // "none"' | sed 's/n8n@//')
+          if [ "$OUR_V2" != "none" ] && [ "$(echo "$OUR_V2" | sed 's/-[0-9]*$//')" = "$V2_LATEST" ]; then
+            # Same version, increment suffix
+            CURRENT_SUFFIX=$(echo "$OUR_V2" | grep -o '\-[0-9]*$' | tr -d '-' || echo "0")
+            V2_SUFFIX="-$((CURRENT_SUFFIX + 1))"
+          else
+            V2_SUFFIX=""
+          fi
 
-  build-and-push-new-docker-image:
-    needs: check-new-release
-    if: ${{ needs.check-new-release.outputs.has_new_release == 'true' }}
+          echo "v1_version=$V1_LATEST" >> $GITHUB_OUTPUT
+          echo "v1_suffix=$V1_SUFFIX" >> $GITHUB_OUTPUT
+          echo "v2_version=$V2_LATEST" >> $GITHUB_OUTPUT
+          echo "v2_suffix=$V2_SUFFIX" >> $GITHUB_OUTPUT
+
+          echo "📦 Will build: v1=$V1_LATEST$V1_SUFFIX, v2=$V2_LATEST$V2_SUFFIX"
+
+  build-v1:
+    needs: check-and-prepare
+    if: ${{ needs.check-and-prepare.outputs.should_build == 'true' && needs.check-and-prepare.outputs.v1_version != '' && needs.check-and-prepare.outputs.v1_version != 'null' }}
     uses: ./.github/workflows/build-and-push.yml
     secrets: inherit
     with:
-      n8n_version: ${{ needs.check-new-release.outputs.version_to_release }}
-      next_version_suffix: ${{ needs.check-new-release.outputs.next_version_suffix }}
+      n8n_version: ${{ needs.check-and-prepare.outputs.v1_version }}
+      major_version: '1'
+      next_version_suffix: ${{ needs.check-and-prepare.outputs.v1_suffix }}
+
+  build-v2:
+    needs: check-and-prepare
+    if: ${{ needs.check-and-prepare.outputs.should_build == 'true' && needs.check-and-prepare.outputs.v2_version != '' && needs.check-and-prepare.outputs.v2_version != 'null' }}
+    uses: ./.github/workflows/build-and-push.yml
+    secrets: inherit
+    with:
+      n8n_version: ${{ needs.check-and-prepare.outputs.v2_version }}
+      major_version: '2'
+      next_version_suffix: ${{ needs.check-and-prepare.outputs.v2_suffix }}
