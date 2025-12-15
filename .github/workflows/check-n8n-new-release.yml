@@ -1,4 +1,4 @@
-name: 👀 Check for new n8n stable releases and builds new custom image releases if needed
+name: 👀 Check for new n8n stable releases and build new custom image releases
 
 on:
   schedule:
@@ -6,91 +6,134 @@ on:
   workflow_dispatch:
 
 jobs:
-  check-releases:
+  check-v1:
+    name: 🔍 Check n8n v1 releases
     runs-on: ubuntu-latest
     timeout-minutes: 10
-
-    strategy:
-      fail-fast: false
-      matrix:
-        major_version: ['1', '2']
-
     outputs:
-      v1_has_new_release: ${{ steps.check_v1.outputs.has_new_release }}
-      v1_version: ${{ steps.check_v1.outputs.version }}
-      v2_has_new_release: ${{ steps.check_v2.outputs.has_new_release }}
-      v2_version: ${{ steps.check_v2.outputs.version }}
+      has_new_release: ${{ steps.check.outputs.has_new_release }}
+      version: ${{ steps.check.outputs.version }}
 
     steps:
-      - name: 🔍 Get latest n8n v${{ matrix.major_version }} release
-        id: get_n8n_release
+      - name: 🔍 Get latest n8n v1 release
+        id: n8n
         run: |
-          # Fetch all releases and filter by major version
           LATEST=$(curl -s "https://api.github.com/repos/n8n-io/n8n/releases" | \
-            jq -r '[.[] | select(.tag_name | startswith("n8n@${{ matrix.major_version }}.")) | select(.prerelease == false)] | .[0].tag_name' | \
+            jq -r '[.[] | select(.tag_name | startswith("n8n@1.")) | select(.prerelease == false)] | .[0].tag_name' | \
             sed 's/n8n@//')
-
-          echo "Latest n8n v${{ matrix.major_version }}: $LATEST"
+          echo "Latest n8n v1: $LATEST"
           echo "version=$LATEST" >> $GITHUB_OUTPUT
 
-      - name: 👀 Get our latest v${{ matrix.major_version }} custom image release
-        id: get_custom_release
+      - name: 👀 Get our latest v1 custom image release
+        id: ours
         run: |
-          # Get our releases and find the latest for this major version
           OUR_LATEST=$(curl -s "https://api.github.com/repos/codeculturehq/n8n-custom-image/releases" | \
-            jq -r '[.[] | select(.tag_name | startswith("n8n@${{ matrix.major_version }}.")) | select(.prerelease == false)] | .[0].tag_name // "none"' | \
+            jq -r '[.[] | select(.tag_name | startswith("n8n@1.")) | select(.prerelease == false)] | .[0].tag_name // "none"' | \
             sed 's/n8n@//' | sed 's/-[0-9]*$//')
-
-          echo "Our latest v${{ matrix.major_version }}: $OUR_LATEST"
+          echo "Our latest v1: $OUR_LATEST"
           echo "version=$OUR_LATEST" >> $GITHUB_OUTPUT
 
-      - name: 🤲 Check if new release needed for v${{ matrix.major_version }}
-        id: check_v${{ matrix.major_version }}
+      - name: 🤲 Check if new release needed
+        id: check
         run: |
-          N8N_VERSION="${{ steps.get_n8n_release.outputs.version }}"
-          OUR_VERSION="${{ steps.get_custom_release.outputs.version }}"
-
-          echo "Comparing: n8n=$N8N_VERSION vs ours=$OUR_VERSION"
+          N8N_VERSION="${{ steps.n8n.outputs.version }}"
+          OUR_VERSION="${{ steps.ours.outputs.version }}"
 
           if [ -z "$N8N_VERSION" ] || [ "$N8N_VERSION" = "null" ]; then
-            echo "No n8n v${{ matrix.major_version }} release found"
+            echo "No n8n v1 release found"
             echo "has_new_release=false" >> $GITHUB_OUTPUT
             exit 0
           fi
 
           if [ "$OUR_VERSION" = "none" ] || [ "$OUR_VERSION" = "null" ]; then
-            echo "🆕 First release for v${{ matrix.major_version }}!"
+            echo "🆕 First v1 release!"
             echo "has_new_release=true" >> $GITHUB_OUTPUT
             echo "version=$N8N_VERSION" >> $GITHUB_OUTPUT
             exit 0
           fi
 
-          # Compare versions
           LATEST=$(echo -e "$OUR_VERSION\n$N8N_VERSION" | sort -V | tail -n1)
-
           if [ "$OUR_VERSION" != "$LATEST" ]; then
-            echo "🤩 New v${{ matrix.major_version }} release: $N8N_VERSION"
+            echo "🤩 New v1 release: $N8N_VERSION"
             echo "has_new_release=true" >> $GITHUB_OUTPUT
             echo "version=$N8N_VERSION" >> $GITHUB_OUTPUT
           else
-            echo "👍 v${{ matrix.major_version }} is up to date"
+            echo "👍 v1 is up to date"
+            echo "has_new_release=false" >> $GITHUB_OUTPUT
+          fi
+
+  check-v2:
+    name: 🔍 Check n8n v2 releases
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      has_new_release: ${{ steps.check.outputs.has_new_release }}
+      version: ${{ steps.check.outputs.version }}
+
+    steps:
+      - name: 🔍 Get latest n8n v2 release
+        id: n8n
+        run: |
+          LATEST=$(curl -s "https://api.github.com/repos/n8n-io/n8n/releases" | \
+            jq -r '[.[] | select(.tag_name | startswith("n8n@2.")) | select(.prerelease == false)] | .[0].tag_name' | \
+            sed 's/n8n@//')
+          echo "Latest n8n v2: $LATEST"
+          echo "version=$LATEST" >> $GITHUB_OUTPUT
+
+      - name: 👀 Get our latest v2 custom image release
+        id: ours
+        run: |
+          OUR_LATEST=$(curl -s "https://api.github.com/repos/codeculturehq/n8n-custom-image/releases" | \
+            jq -r '[.[] | select(.tag_name | startswith("n8n@2.")) | select(.prerelease == false)] | .[0].tag_name // "none"' | \
+            sed 's/n8n@//' | sed 's/-[0-9]*$//')
+          echo "Our latest v2: $OUR_LATEST"
+          echo "version=$OUR_LATEST" >> $GITHUB_OUTPUT
+
+      - name: 🤲 Check if new release needed
+        id: check
+        run: |
+          N8N_VERSION="${{ steps.n8n.outputs.version }}"
+          OUR_VERSION="${{ steps.ours.outputs.version }}"
+
+          if [ -z "$N8N_VERSION" ] || [ "$N8N_VERSION" = "null" ]; then
+            echo "No n8n v2 release found"
+            echo "has_new_release=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          if [ "$OUR_VERSION" = "none" ] || [ "$OUR_VERSION" = "null" ]; then
+            echo "🆕 First v2 release!"
+            echo "has_new_release=true" >> $GITHUB_OUTPUT
+            echo "version=$N8N_VERSION" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          LATEST=$(echo -e "$OUR_VERSION\n$N8N_VERSION" | sort -V | tail -n1)
+          if [ "$OUR_VERSION" != "$LATEST" ]; then
+            echo "🤩 New v2 release: $N8N_VERSION"
+            echo "has_new_release=true" >> $GITHUB_OUTPUT
+            echo "version=$N8N_VERSION" >> $GITHUB_OUTPUT
+          else
+            echo "👍 v2 is up to date"
             echo "has_new_release=false" >> $GITHUB_OUTPUT
           fi
 
   build-v1:
-    needs: check-releases
-    if: ${{ needs.check-releases.outputs.v1_has_new_release == 'true' }}
+    name: 🐳 Build v1
+    needs: check-v1
+    if: ${{ needs.check-v1.outputs.has_new_release == 'true' }}
     uses: ./.github/workflows/build-and-push.yml
     secrets: inherit
     with:
-      n8n_version: ${{ needs.check-releases.outputs.v1_version }}
+      n8n_version: ${{ needs.check-v1.outputs.version }}
       major_version: '1'
 
   build-v2:
-    needs: check-releases
-    if: ${{ needs.check-releases.outputs.v2_has_new_release == 'true' }}
+    name: 🐳 Build v2
+    needs: check-v2
+    if: ${{ needs.check-v2.outputs.has_new_release == 'true' }}
     uses: ./.github/workflows/build-and-push.yml
     secrets: inherit
     with:
-      n8n_version: ${{ needs.check-releases.outputs.v2_version }}
+      n8n_version: ${{ needs.check-v2.outputs.version }}
       major_version: '2'
