@@ -1,0 +1,26 @@
+{
+  "minimal": {
+    "description": "RFC1918 + localhost only",
+    "allow": ["127.0.0.0/8", "10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"]
+  },
+  "standard_saas": {
+    "description": "Common business SaaS",
+    "allow_domains": [
+      "*.slack.com",
+      "*.googleapis.com",
+      "*.microsoft.com",
+      "*.github.com",
+      "*.amazonaws.com"
+    ]
+  },
+  "ai_heavy": {
+    "description": "AI providers + vector DBs",
+    "allow_domains": [
+      "api.openai.com",
+      "api.anthropic.com",
+      "*.googleapis.com",
+      "*.pinecone.io",
+      "*.weaviate.io"
+    ]
+  }
+}

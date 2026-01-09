@@ -1,0 +1,14 @@
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: n8n-egress-allowlist
+spec:
+  endpointSelector:
+    matchLabels:
+      app: n8n
+  egress:
+    - toEntities:
+        - cluster
+    - toFQDNs:
+        - matchPattern: "*.slack.com"
+        - matchPattern: "*.googleapis.com"

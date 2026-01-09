@@ -38,6 +38,9 @@ jobs:
     name: 🐳 Build and push Docker image
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    env:
+      DOCKER_IMAGE: ${{ vars.DOCKER_IMAGE || 'tinod/n8n-custom-image' }}
+      DOCKER_IMAGE_SECURE: ${{ vars.DOCKER_IMAGE_SECURE || 'tinod/n8n-custom-image-secure' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -47,6 +50,8 @@ jobs:
           VERSION="${{ inputs.n8n_version }}"
           MAJOR="${{ inputs.major_version }}"
           SUFFIX="${{ inputs.next_version_suffix }}"
+          IMAGE="${DOCKER_IMAGE}"
+          IMAGE_SECURE="${DOCKER_IMAGE_SECURE}"
 
           # Auto-detect major version if not provided
           if [ -z "$MAJOR" ]; then
@@ -56,16 +61,22 @@ jobs:
           echo "major=$MAJOR" >> $GITHUB_OUTPUT
 
           # Build tag list
-          TAGS="tinod/n8n-custom-image:${VERSION}${SUFFIX}"
-          TAGS="$TAGS,tinod/n8n-custom-image:v${MAJOR}"
+          TAGS_DEFAULT="${IMAGE}:${VERSION}${SUFFIX}"
+          TAGS_DEFAULT="$TAGS_DEFAULT,${IMAGE}:v${MAJOR}"
+
+          TAGS_SECURE="${IMAGE_SECURE}:${VERSION}${SUFFIX}"
+          TAGS_SECURE="$TAGS_SECURE,${IMAGE_SECURE}:v${MAJOR}"
 
           # v2 gets 'latest' tag
           if [ "$MAJOR" = "2" ]; then
-            TAGS="$TAGS,tinod/n8n-custom-image:latest"
+            TAGS_DEFAULT="$TAGS_DEFAULT,${IMAGE}:latest"
+            TAGS_SECURE="$TAGS_SECURE,${IMAGE_SECURE}:latest"
           fi
 
-          echo "tags=$TAGS" >> $GITHUB_OUTPUT
-          echo "📦 Will push tags: $TAGS"
+          echo "tags_default=$TAGS_DEFAULT" >> $GITHUB_OUTPUT
+          echo "tags_secure=$TAGS_SECURE" >> $GITHUB_OUTPUT
+          echo "📦 Will push tags (base): $TAGS_DEFAULT"
+          echo "📦 Will push tags (secure): $TAGS_SECURE"
 
       - name: 🧹 Free disk space
         run: |
@@ -95,13 +106,18 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-      - uses: docker/build-push-action@v6
+      - uses: docker/bake-action@v5
         with:
-          context: .
-          build-args: N8N_VERSION=${{ inputs.n8n_version }}
+          files: docker-bake.hcl
+          targets: base,secure
           push: true
-          tags: ${{ steps.tags.outputs.tags }}
-          platforms: linux/amd64,linux/arm64
+          set: |
+            base.args.N8N_VERSION=${{ inputs.n8n_version }}
+            secure.args.N8N_VERSION=${{ inputs.n8n_version }}
+            base.tags=${{ steps.tags.outputs.tags_default }}
+            secure.tags=${{ steps.tags.outputs.tags_secure }}
+            base.platforms=linux/amd64,linux/arm64
+            secure.platforms=linux/amd64,linux/arm64
 
   create-release:
     name: 🏷️ Create GitHub Release
@@ -121,6 +137,9 @@ jobs:
     needs: build-push-docker-image
     runs-on: ubuntu-latest
     timeout-minutes: 2
+    env:
+      DOCKER_IMAGE: ${{ vars.DOCKER_IMAGE || 'tinod/n8n-custom-image' }}
+      DOCKER_IMAGE_SECURE: ${{ vars.DOCKER_IMAGE_SECURE || 'tinod/n8n-custom-image-secure' }}
     steps:
       - name: 🔢 Get major version
         id: major
@@ -138,4 +157,4 @@ jobs:
           webhook-type: webhook-trigger
           payload: |
             channel: #it
-            text: "New n8n v${{ steps.major.outputs.version }} custom image pushed: ${{ inputs.n8n_version }}${{ inputs.next_version_suffix }} :tada:"
+            text: "New n8n v${{ steps.major.outputs.version }} images pushed: ${{ inputs.n8n_version }}${{ inputs.next_version_suffix }} → ${DOCKER_IMAGE} + ${DOCKER_IMAGE_SECURE} :tada:"

@@ -1,0 +1,38 @@
+{
+  "offline_default": {
+    "description": "No license service calls; offline only (safe default)",
+    "env": {
+      "N8N_LICENSE_SERVICE_ENABLED": "false",
+      "N8N_LICENSE_OFFLINE_MODE": "true",
+      "N8N_LICENSE_AUTO_RENEW_ENABLED": "false"
+    },
+    "notes": [
+      "Use with preloaded certificate (N8N_LICENSE_CERT) if needed",
+      "No activation/renewal calls will be made"
+    ]
+  },
+  "online_test": {
+    "description": "Temporary activation/renewal test",
+    "env": {
+      "N8N_LICENSE_SERVICE_ENABLED": "true",
+      "N8N_LICENSE_OFFLINE_MODE": "false",
+      "N8N_LICENSE_AUTO_RENEW_ENABLED": "false"
+    },
+    "notes": [
+      "Set N8N_LICENSE_ACTIVATION_KEY at runtime",
+      "Disable after test to meet privacy restrictions"
+    ]
+  },
+  "internal_proxy": {
+    "description": "Route license traffic through internal proxy",
+    "env": {
+      "N8N_LICENSE_SERVICE_ENABLED": "true",
+      "N8N_LICENSE_OFFLINE_MODE": "false",
+      "N8N_LICENSE_AUTO_RENEW_ENABLED": "true",
+      "N8N_LICENSE_SERVER_URL_OVERRIDE": "https://license-proxy.internal/v1"
+    },
+    "notes": [
+      "Ensure proxy enforces data minimization and logging policy"
+    ]
+  }
+}

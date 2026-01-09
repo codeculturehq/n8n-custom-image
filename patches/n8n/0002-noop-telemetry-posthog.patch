@@ -1,0 +1,39 @@
+--- a/packages/cli/src/telemetry/index.ts
++++ b/packages/cli/src/telemetry/index.ts
+@@ -64,6 +64,10 @@
+ 	) {}
+ 
+ 	async init() {
++		if (process.env.N8N_DISABLE_EXTERNAL_COMMUNICATIONS === 'true') {
++			return;
++		}
++
+ 		const { enabled, backendConfig } = this.globalConfig.diagnostics;
+ 		if (enabled) {
+ 			const [key, dataPlaneUrl] = backendConfig.split(';');
+--- a/packages/cli/src/posthog/index.ts
++++ b/packages/cli/src/posthog/index.ts
+@@ -15,6 +15,10 @@
+ 	) {}
+ 
+ 	async init() {
++		if (process.env.N8N_DISABLE_EXTERNAL_COMMUNICATIONS === 'true') {
++			return;
++		}
++
+ 		const { enabled, posthogConfig } = this.globalConfig.diagnostics;
+ 		if (!enabled) {
+ 			return;
+--- a/packages/frontend/editor-ui/src/app/stores/posthog.store.ts
++++ b/packages/frontend/editor-ui/src/app/stores/posthog.store.ts
+@@ -122,6 +122,10 @@
+ 			return;
+ 		}
+ 
++		if (!settingsStore.settings.telemetry?.enabled) {
++			return;
++		}
++
+ 		const config = settingsStore.settings.posthog;
+ 		if (!config.enabled) {
+ 			return;

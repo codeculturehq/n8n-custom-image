@@ -1,0 +1,10 @@
+services:
+  n8n:
+    image: codelytvtech/n8n-custom-image:local
+    environment:
+      - N8N_DISABLE_EXTERNAL_COMMUNICATIONS=true
+    cap_add:
+      - NET_ADMIN
+    command: ["/bin/sh", "-lc", "iptables-restore < /egress/iptables.rules && n8n start"]
+    volumes:
+      - ./docker/egress/iptables.rules:/egress/iptables.rules:ro
