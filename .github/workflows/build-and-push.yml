@@ -116,8 +116,6 @@ jobs:
             secure.args.N8N_VERSION=${{ inputs.n8n_version }}
             base.tags=${{ steps.tags.outputs.tags_default }}
             secure.tags=${{ steps.tags.outputs.tags_secure }}
-            base.platforms=linux/amd64,linux/arm64
-            secure.platforms=linux/amd64,linux/arm64
 
   create-release:
     name: 🏷️ Create GitHub Release
