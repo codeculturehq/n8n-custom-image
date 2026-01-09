@@ -61,22 +61,29 @@ jobs:
           echo "major=$MAJOR" >> $GITHUB_OUTPUT
 
           # Build tag list
-          TAGS_DEFAULT="${IMAGE}:${VERSION}${SUFFIX}"
-          TAGS_DEFAULT="$TAGS_DEFAULT,${IMAGE}:v${MAJOR}"
+          TAGS_DEFAULT=("${IMAGE}:${VERSION}${SUFFIX}" "${IMAGE}:v${MAJOR}")
 
-          TAGS_SECURE="${IMAGE_SECURE}:${VERSION}${SUFFIX}"
-          TAGS_SECURE="$TAGS_SECURE,${IMAGE_SECURE}:v${MAJOR}"
+          TAGS_SECURE=("${IMAGE_SECURE}:${VERSION}${SUFFIX}" "${IMAGE_SECURE}:v${MAJOR}")
 
           # v2 gets 'latest' tag
           if [ "$MAJOR" = "2" ]; then
-            TAGS_DEFAULT="$TAGS_DEFAULT,${IMAGE}:latest"
-            TAGS_SECURE="$TAGS_SECURE,${IMAGE_SECURE}:latest"
+            TAGS_DEFAULT+=("${IMAGE}:latest")
+            TAGS_SECURE+=("${IMAGE_SECURE}:latest")
           fi
 
-          echo "tags_default=$TAGS_DEFAULT" >> $GITHUB_OUTPUT
-          echo "tags_secure=$TAGS_SECURE" >> $GITHUB_OUTPUT
-          echo "📦 Will push tags (base): $TAGS_DEFAULT"
-          echo "📦 Will push tags (secure): $TAGS_SECURE"
+          echo "📦 Will push tags (base): ${TAGS_DEFAULT[*]}"
+          echo "📦 Will push tags (secure): ${TAGS_SECURE[*]}"
+
+          BAKE_SET="base.args.N8N_VERSION=${VERSION}\nsecure.args.N8N_VERSION=${VERSION}\n"
+          for tag in "${TAGS_DEFAULT[@]}"; do
+            BAKE_SET="${BAKE_SET}base.tags=${tag}\n"
+          done
+          for tag in "${TAGS_SECURE[@]}"; do
+            BAKE_SET="${BAKE_SET}secure.tags=${tag}\n"
+          done
+          echo "bake_set<<EOF" >> "$GITHUB_OUTPUT"
+          echo -e "$BAKE_SET" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
 
       - name: 🧹 Free disk space
         run: |
@@ -111,11 +118,7 @@ jobs:
           files: docker-bake.hcl
           targets: base,secure
           push: true
-          set: |
-            base.args.N8N_VERSION=${{ inputs.n8n_version }}
-            secure.args.N8N_VERSION=${{ inputs.n8n_version }}
-            base.tags=${{ steps.tags.outputs.tags_default }}
-            secure.tags=${{ steps.tags.outputs.tags_secure }}
+          set: ${{ steps.tags.outputs.bake_set }}
 
   create-release:
     name: 🏷️ Create GitHub Release
