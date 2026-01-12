@@ -1,0 +1,231 @@
+{{- if .Values.networkPolicy.enabled }}
+---
+# Base deny-all egress policy
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "n8n-custom.fullname" . }}-egress-base
+  labels:
+    {{- include "n8n-custom.labels" . | nindent 4 }}
+    policy-profile: base
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "n8n-custom.selectorLabels" . | nindent 6 }}
+  policyTypes:
+    - Egress
+  egress:
+    # Allow DNS resolution
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+---
+{{- if eq .Values.networkPolicy.profile "minimal" }}
+# Minimal profile: Internal cluster only (GDPR/DSGVO default)
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "n8n-custom.fullname" . }}-egress-minimal
+  labels:
+    {{- include "n8n-custom.labels" . | nindent 4 }}
+    policy-profile: minimal
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "n8n-custom.selectorLabels" . | nindent 6 }}
+  policyTypes:
+    - Egress
+  egress:
+    # Allow RFC1918 private ranges only
+    - to:
+        - ipBlock:
+            cidr: 10.0.0.0/8
+        - ipBlock:
+            cidr: 172.16.0.0/12
+        - ipBlock:
+            cidr: 192.168.0.0/16
+{{- end }}
+---
+{{- if eq .Values.networkPolicy.profile "saas" }}
+# SaaS profile: Allow HTTPS to internet
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "n8n-custom.fullname" . }}-egress-saas
+  labels:
+    {{- include "n8n-custom.labels" . | nindent 4 }}
+    policy-profile: saas
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "n8n-custom.selectorLabels" . | nindent 6 }}
+  policyTypes:
+    - Egress
+  egress:
+    # Allow internal cluster
+    - to:
+        - ipBlock:
+            cidr: 10.0.0.0/8
+        - ipBlock:
+            cidr: 172.16.0.0/12
+        - ipBlock:
+            cidr: 192.168.0.0/16
+    # Allow HTTPS to internet
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except:
+              - 10.0.0.0/8
+              - 172.16.0.0/12
+              - 192.168.0.0/16
+              - 169.254.0.0/16
+              - 127.0.0.0/8
+      ports:
+        - protocol: TCP
+          port: 443
+{{- end }}
+---
+{{- if eq .Values.networkPolicy.profile "ai-providers" }}
+# AI Providers profile: Allow HTTPS + common AI ports
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "n8n-custom.fullname" . }}-egress-ai
+  labels:
+    {{- include "n8n-custom.labels" . | nindent 4 }}
+    policy-profile: ai-providers
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "n8n-custom.selectorLabels" . | nindent 6 }}
+  policyTypes:
+    - Egress
+  egress:
+    # Allow internal cluster
+    - to:
+        - ipBlock:
+            cidr: 10.0.0.0/8
+        - ipBlock:
+            cidr: 172.16.0.0/12
+        - ipBlock:
+            cidr: 192.168.0.0/16
+    # Allow HTTPS to internet (for AI APIs)
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except:
+              - 10.0.0.0/8
+              - 172.16.0.0/12
+              - 192.168.0.0/16
+              - 169.254.0.0/16
+              - 127.0.0.0/8
+      ports:
+        - protocol: TCP
+          port: 443
+{{- end }}
+---
+{{- if eq .Values.networkPolicy.profile "custom" }}
+# Custom profile: User-defined egress rules
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "n8n-custom.fullname" . }}-egress-custom
+  labels:
+    {{- include "n8n-custom.labels" . | nindent 4 }}
+    policy-profile: custom
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "n8n-custom.selectorLabels" . | nindent 6 }}
+  policyTypes:
+    - Egress
+  egress:
+    # Always allow internal cluster
+    - to:
+        - ipBlock:
+            cidr: 10.0.0.0/8
+        - ipBlock:
+            cidr: 172.16.0.0/12
+        - ipBlock:
+            cidr: 192.168.0.0/16
+    {{- with .Values.networkPolicy.additionalEgress }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+{{- end }}
+---
+{{- if and (eq .Values.database.type "postgres") .Values.database.postgres.host }}
+# Allow PostgreSQL egress
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "n8n-custom.fullname" . }}-egress-postgres
+  labels:
+    {{- include "n8n-custom.labels" . | nindent 4 }}
+    policy-profile: database
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "n8n-custom.selectorLabels" . | nindent 6 }}
+  policyTypes:
+    - Egress
+  egress:
+    - ports:
+        - protocol: TCP
+          port: {{ .Values.database.postgres.port }}
+{{- end }}
+---
+{{- if .Values.queue.enabled }}
+# Allow Redis egress for queue mode
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "n8n-custom.fullname" . }}-egress-redis
+  labels:
+    {{- include "n8n-custom.labels" . | nindent 4 }}
+    policy-profile: queue
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "n8n-custom.selectorLabels" . | nindent 6 }}
+  policyTypes:
+    - Egress
+  egress:
+    - ports:
+        - protocol: TCP
+          port: {{ .Values.queue.redis.port }}
+{{- end }}
+---
+{{- if .Values.smtp.enabled }}
+# Allow SMTP egress
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "n8n-custom.fullname" . }}-egress-smtp
+  labels:
+    {{- include "n8n-custom.labels" . | nindent 4 }}
+    policy-profile: smtp
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "n8n-custom.selectorLabels" . | nindent 6 }}
+  policyTypes:
+    - Egress
+  egress:
+    - ports:
+        - protocol: TCP
+          port: {{ .Values.smtp.port }}
+        - protocol: TCP
+          port: 465
+        - protocol: TCP
+          port: 25
+{{- end }}
+{{- end }}

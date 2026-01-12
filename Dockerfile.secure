@@ -1,9 +1,28 @@
+# n8n Secure Image - GDPR/DSGVO Compliant
+# =========================================
+# This image extends the base n8n image with hardened privacy defaults:
+# - All telemetry and analytics disabled
+# - License service disabled (offline mode)
+# - Version notifications disabled
+# - Templates disabled (prevents external API calls)
+#
+# For source-patched builds (defense in depth), use:
+#   ./scripts/apply-n8n-patches.sh
+#   docker build -f Dockerfile.secure -t n8n-secure:local .
+#
+# Environment variable overrides:
+# - N8N_LICENSE_FORCE_FEATURES: Force-enable features (comma-separated)
+# - N8N_LICENSE_BLOCK_FEATURES: Force-disable features (comma-separated)
+# - N8N_LICENSE_FORCE_PLAN: Override plan name (Community, Team, Enterprise)
+# - N8N_LICENSE_QUOTA_<NAME>: Override quotas (e.g., USERS_LIMIT=100)
+
 ARG N8N_VERSION=latest
-ARG N8N_TAG=n8n@2.3.2
 FROM n8nio/n8n:${N8N_VERSION}
 ARG N8N_VERSION
-ENV PYTHONUNBUFFERED=1
-ENV N8N_DISABLE_EXTERNAL_COMMUNICATIONS=true \
+
+# Privacy-first defaults - disable all external communications
+ENV PYTHONUNBUFFERED=1 \
+    N8N_DISABLE_EXTERNAL_COMMUNICATIONS=true \
     N8N_DIAGNOSTICS_ENABLED=false \
     N8N_VERSION_NOTIFICATIONS_ENABLED=false \
     N8N_VERSION_NOTIFICATIONS_WHATS_NEW_ENABLED=false \
@@ -11,7 +30,8 @@ ENV N8N_DISABLE_EXTERNAL_COMMUNICATIONS=true \
     N8N_TEMPLATES_ENABLED=false \
     N8N_PERSONALIZATION_ENABLED=false \
     N8N_LICENSE_AUTO_RENEW_ENABLED=false \
-    N8N_LICENSE_SERVICE_ENABLED=false
+    N8N_LICENSE_SERVICE_ENABLED=false \
+    N8N_LICENSE_OFFLINE_MODE=true
 
 RUN if [ -z "$N8N_VERSION" ] ; then echo "✋ The N8N_VERSION argument is missing!" ; exit 1; fi
 

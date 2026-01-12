@@ -113,6 +113,16 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: 🔍 Verify zero-outbound configuration (Dockerfile)
+        run: |
+          echo "Checking privacy defaults in Dockerfiles..."
+          # Verify base Dockerfile has privacy env vars
+          grep -q "N8N_DISABLE_EXTERNAL_COMMUNICATIONS=true" Dockerfile || { echo "ERROR: Missing N8N_DISABLE_EXTERNAL_COMMUNICATIONS in Dockerfile"; exit 1; }
+          grep -q "N8N_DIAGNOSTICS_ENABLED=false" Dockerfile || { echo "ERROR: Missing N8N_DIAGNOSTICS_ENABLED in Dockerfile"; exit 1; }
+          # Verify secure Dockerfile has additional hardening
+          grep -q "N8N_LICENSE_SERVICE_ENABLED=false" Dockerfile.secure || { echo "ERROR: Missing N8N_LICENSE_SERVICE_ENABLED in Dockerfile.secure"; exit 1; }
+          echo "✓ All privacy defaults verified"
+
       - uses: docker/bake-action@v5
         with:
           files: docker-bake.hcl

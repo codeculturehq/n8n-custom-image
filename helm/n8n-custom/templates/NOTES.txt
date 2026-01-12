@@ -1,0 +1,81 @@
+n8n-custom has been deployed!
+
+=== Access ===
+
+{{- if .Values.ingress.enabled }}
+Access n8n at:
+{{- range .Values.ingress.hosts }}
+  http{{ if $.Values.ingress.tls }}s{{ end }}://{{ .host }}
+{{- end }}
+{{- else if contains "NodePort" .Values.service.type }}
+Get the application URL by running:
+  export NODE_PORT=$(kubectl get --namespace {{ .Release.Namespace }} -o jsonpath="{.spec.ports[0].nodePort}" services {{ include "n8n-custom.fullname" . }})
+  export NODE_IP=$(kubectl get nodes --namespace {{ .Release.Namespace }} -o jsonpath="{.items[0].status.addresses[0].address}")
+  echo http://$NODE_IP:$NODE_PORT
+{{- else if contains "LoadBalancer" .Values.service.type }}
+Get the application URL by running:
+  NOTE: It may take a few minutes for the LoadBalancer IP to be available.
+  kubectl get --namespace {{ .Release.Namespace }} svc -w {{ include "n8n-custom.fullname" . }}
+{{- else if contains "ClusterIP" .Values.service.type }}
+Access n8n via port-forward:
+  kubectl --namespace {{ .Release.Namespace }} port-forward svc/{{ include "n8n-custom.fullname" . }} 5678:{{ .Values.service.port }}
+  Then open: http://localhost:5678
+{{- end }}
+
+=== Privacy Configuration ===
+
+External Communications: {{ .Values.privacy.disableExternalCommunications | ternary "DISABLED (GDPR compliant)" "enabled" }}
+Telemetry/Diagnostics:   {{ .Values.privacy.disableDiagnostics | ternary "DISABLED" "enabled" }}
+Version Notifications:   {{ .Values.privacy.disableVersionNotifications | ternary "DISABLED" "enabled" }}
+Templates:               {{ .Values.privacy.disableTemplates | ternary "DISABLED" "enabled" }}
+
+=== License Configuration ===
+
+License Service:  {{ .Values.license.serviceEnabled | ternary "ENABLED" "disabled" }}
+Offline Mode:     {{ .Values.license.offlineMode | ternary "ENABLED" "disabled" }}
+{{- if .Values.license.gdprOverrides.enabled }}
+GDPR Overrides:   ENABLED
+{{- if .Values.license.gdprOverrides.forcePlan }}
+  Force Plan:     {{ .Values.license.gdprOverrides.forcePlan }}
+{{- end }}
+{{- end }}
+
+=== Network Policy ===
+
+{{- if .Values.networkPolicy.enabled }}
+Network Policy Profile: {{ .Values.networkPolicy.profile }}
+{{- if eq .Values.networkPolicy.profile "minimal" }}
+  Only internal cluster traffic is allowed (RFC1918).
+  This is the most restrictive (GDPR-compliant) setting.
+{{- else if eq .Values.networkPolicy.profile "saas" }}
+  HTTPS to internet is allowed for SaaS integrations.
+{{- else if eq .Values.networkPolicy.profile "ai-providers" }}
+  HTTPS to internet is allowed for AI provider APIs.
+{{- end }}
+{{- else }}
+Network Policies: DISABLED
+  Consider enabling for production deployments.
+{{- end }}
+
+=== Database ===
+
+Type: {{ .Values.database.type }}
+{{- if eq .Values.database.type "postgres" }}
+Host: {{ .Values.database.postgres.host }}
+{{- end }}
+
+=== Verification ===
+
+Check pod status:
+  kubectl get pods --namespace {{ .Release.Namespace }} -l "app.kubernetes.io/name={{ include "n8n-custom.name" . }}"
+
+View logs:
+  kubectl logs --namespace {{ .Release.Namespace }} -l "app.kubernetes.io/name={{ include "n8n-custom.name" . }}"
+
+Verify privacy settings in n8n:
+  1. Open Settings in n8n UI
+  2. Check that telemetry is disabled
+  3. Verify no external API calls in network inspector
+
+For more information, see:
+  https://github.com/tinod/n8n-custom-image

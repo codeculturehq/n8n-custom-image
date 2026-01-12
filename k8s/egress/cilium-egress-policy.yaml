@@ -1,14 +1,335 @@
+# Cilium L7 Egress Policies for n8n
+# =================================
+# These policies provide granular egress control using Cilium's L7 capabilities.
+# Apply based on your deployment requirements:
+#   - minimal: Zero external communications (GDPR/DSGVO default)
+#   - saas: Common SaaS integrations allowed
+#   - ai-providers: AI/ML API endpoints allowed
+#
+# Usage:
+#   kubectl apply -f cilium-egress-policy.yaml
+#
+# Requirements:
+#   - Cilium CNI installed with DNS proxy enabled
+#   - kube-dns/CoreDNS accessible from pods
+---
+# Base policy: Deny all egress by default
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:
-  name: n8n-egress-allowlist
+  name: n8n-egress-deny-all
+  namespace: n8n
+  labels:
+    app.kubernetes.io/name: n8n
+    policy-profile: base
 spec:
+  description: "Default deny all egress - apply allowlist policies on top"
   endpointSelector:
     matchLabels:
       app: n8n
   egress:
+    # Allow DNS resolution (required for FQDN policies to work)
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: kube-system
+            k8s-app: kube-dns
+      toPorts:
+        - ports:
+            - port: "53"
+              protocol: UDP
+            - port: "53"
+              protocol: TCP
+          rules:
+            dns:
+              - matchPattern: "*"
+---
+# Minimal profile: Internal cluster only (GDPR/DSGVO compliant)
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: n8n-egress-minimal
+  namespace: n8n
+  labels:
+    app.kubernetes.io/name: n8n
+    policy-profile: minimal
+spec:
+  description: "Minimal egress - cluster internal only, no external communications"
+  endpointSelector:
+    matchLabels:
+      app: n8n
+  egress:
+    # Allow all cluster-internal traffic
     - toEntities:
         - cluster
+    # Allow RFC1918 private ranges (for on-prem integrations)
+    - toCIDR:
+        - 10.0.0.0/8
+        - 172.16.0.0/12
+        - 192.168.0.0/16
+---
+# SaaS profile: Common business integrations
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: n8n-egress-saas
+  namespace: n8n
+  labels:
+    app.kubernetes.io/name: n8n
+    policy-profile: saas
+spec:
+  description: "SaaS integrations - Slack, Google, Microsoft, GitHub, AWS"
+  endpointSelector:
+    matchLabels:
+      app: n8n
+  egress:
+    # Slack
     - toFQDNs:
         - matchPattern: "*.slack.com"
+        - matchName: "slack.com"
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP
+          rules:
+            http:
+              - method: "POST"
+              - method: "GET"
+    # Google APIs (Sheets, Drive, Calendar, etc.)
+    - toFQDNs:
         - matchPattern: "*.googleapis.com"
+        - matchName: "googleapis.com"
+        - matchPattern: "*.google.com"
+        - matchName: "accounts.google.com"
+        - matchName: "oauth2.googleapis.com"
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP
+    # Microsoft (Office 365, Teams, etc.)
+    - toFQDNs:
+        - matchPattern: "*.microsoft.com"
+        - matchPattern: "*.office.com"
+        - matchPattern: "*.office365.com"
+        - matchName: "login.microsoftonline.com"
+        - matchName: "graph.microsoft.com"
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP
+    # GitHub
+    - toFQDNs:
+        - matchName: "github.com"
+        - matchName: "api.github.com"
+        - matchPattern: "*.githubusercontent.com"
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP
+    # AWS (S3, Lambda, SES, etc.)
+    - toFQDNs:
+        - matchPattern: "*.amazonaws.com"
+        - matchPattern: "*.aws.amazon.com"
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP
+    # Airtable
+    - toFQDNs:
+        - matchName: "api.airtable.com"
+        - matchName: "airtable.com"
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP
+    # Notion
+    - toFQDNs:
+        - matchName: "api.notion.com"
+        - matchName: "notion.com"
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP
+    # Zapier (webhooks)
+    - toFQDNs:
+        - matchPattern: "*.zapier.com"
+        - matchName: "hooks.zapier.com"
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP
+---
+# AI Providers profile: LLM and AI API endpoints
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: n8n-egress-ai-providers
+  namespace: n8n
+  labels:
+    app.kubernetes.io/name: n8n
+    policy-profile: ai-providers
+spec:
+  description: "AI/ML provider APIs - OpenAI, Anthropic, Google AI, Azure OpenAI"
+  endpointSelector:
+    matchLabels:
+      app: n8n
+  egress:
+    # OpenAI
+    - toFQDNs:
+        - matchName: "api.openai.com"
+        - matchName: "openai.com"
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP
+          rules:
+            http:
+              - method: "POST"
+                path: "/v1/.*"
+              - method: "GET"
+                path: "/v1/.*"
+    # Anthropic
+    - toFQDNs:
+        - matchName: "api.anthropic.com"
+        - matchName: "anthropic.com"
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP
+          rules:
+            http:
+              - method: "POST"
+                path: "/v1/.*"
+    # Google AI (Vertex AI, Gemini)
+    - toFQDNs:
+        - matchPattern: "*.googleapis.com"
+        - matchName: "generativelanguage.googleapis.com"
+        - matchPattern: "*.aiplatform.googleapis.com"
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP
+    # Azure OpenAI
+    - toFQDNs:
+        - matchPattern: "*.openai.azure.com"
+        - matchPattern: "*.cognitiveservices.azure.com"
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP
+    # Cohere
+    - toFQDNs:
+        - matchName: "api.cohere.ai"
+        - matchName: "cohere.ai"
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP
+    # Hugging Face
+    - toFQDNs:
+        - matchName: "api-inference.huggingface.co"
+        - matchName: "huggingface.co"
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP
+    # Vector databases
+    - toFQDNs:
+        - matchPattern: "*.pinecone.io"
+        - matchPattern: "*.weaviate.io"
+        - matchPattern: "*.qdrant.io"
+        - matchPattern: "*.milvus.io"
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP
+---
+# Database profile: External database connections
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: n8n-egress-databases
+  namespace: n8n
+  labels:
+    app.kubernetes.io/name: n8n
+    policy-profile: databases
+spec:
+  description: "External database connections - PostgreSQL, MySQL, MongoDB, Redis"
+  endpointSelector:
+    matchLabels:
+      app: n8n
+  egress:
+    # PostgreSQL (standard port)
+    - toCIDR:
+        - 0.0.0.0/0
+      toPorts:
+        - ports:
+            - port: "5432"
+              protocol: TCP
+    # MySQL (standard port)
+    - toCIDR:
+        - 0.0.0.0/0
+      toPorts:
+        - ports:
+            - port: "3306"
+              protocol: TCP
+    # MongoDB (standard port)
+    - toCIDR:
+        - 0.0.0.0/0
+      toPorts:
+        - ports:
+            - port: "27017"
+              protocol: TCP
+    # Redis (standard port)
+    - toCIDR:
+        - 0.0.0.0/0
+      toPorts:
+        - ports:
+            - port: "6379"
+              protocol: TCP
+    # Managed database services (AWS RDS, GCP Cloud SQL, Azure)
+    - toFQDNs:
+        - matchPattern: "*.rds.amazonaws.com"
+        - matchPattern: "*.*.rds.amazonaws.com"
+        - matchPattern: "*.cloudsql.goog"
+        - matchPattern: "*.database.azure.com"
+      toPorts:
+        - ports:
+            - port: "5432"
+              protocol: TCP
+            - port: "3306"
+              protocol: TCP
+---
+# SMTP profile: Email sending
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: n8n-egress-smtp
+  namespace: n8n
+  labels:
+    app.kubernetes.io/name: n8n
+    policy-profile: smtp
+spec:
+  description: "SMTP egress for email sending"
+  endpointSelector:
+    matchLabels:
+      app: n8n
+  egress:
+    # Common SMTP providers
+    - toFQDNs:
+        - matchName: "smtp.gmail.com"
+        - matchPattern: "*.smtp.google.com"
+        - matchName: "smtp.office365.com"
+        - matchPattern: "smtp-*.office365.com"
+        - matchName: "email-smtp.us-east-1.amazonaws.com"
+        - matchPattern: "email-smtp.*.amazonaws.com"
+        - matchName: "smtp.sendgrid.net"
+        - matchName: "smtp.mailgun.org"
+        - matchName: "smtp.postmarkapp.com"
+      toPorts:
+        - ports:
+            - port: "587"
+              protocol: TCP
+            - port: "465"
+              protocol: TCP
+            - port: "25"
+              protocol: TCP

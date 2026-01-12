@@ -1,14 +1,215 @@
+# Standard Kubernetes NetworkPolicies for n8n
+# ============================================
+# These policies work with any CNI that supports NetworkPolicy (Calico, Weave, etc.)
+# Note: Standard NetworkPolicy only supports L3/L4 (IP/port), not L7 (HTTP).
+# For L7 policies, use Cilium (see cilium-egress-policy.yaml).
+#
+# Usage:
+#   kubectl apply -f networkpolicy.yaml
+#
+# Profiles:
+#   - n8n-egress-deny-all: Base deny-all policy
+#   - n8n-egress-minimal: Cluster-internal only (GDPR default)
+#   - n8n-egress-internet: Allow HTTPS to internet (for SaaS integrations)
+---
+# Base policy: Deny all egress
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
   name: n8n-egress-deny-all
+  namespace: n8n
+  labels:
+    app.kubernetes.io/name: n8n
+    policy-profile: base
 spec:
   podSelector:
     matchLabels:
       app: n8n
-  policyTypes: [Egress]
+  policyTypes:
+    - Egress
+  egress: []
+---
+# Minimal profile: Internal cluster + DNS only (GDPR/DSGVO compliant)
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: n8n-egress-minimal
+  namespace: n8n
+  labels:
+    app.kubernetes.io/name: n8n
+    policy-profile: minimal
+spec:
+  podSelector:
+    matchLabels:
+      app: n8n
+  policyTypes:
+    - Egress
   egress:
+    # Allow DNS
     - to:
-        - ipBlock: { cidr: 10.0.0.0/8 }
-        - ipBlock: { cidr: 172.16.0.0/12 }
-        - ipBlock: { cidr: 192.168.0.0/16 }
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    # Allow RFC1918 private ranges (cluster internal + on-prem)
+    - to:
+        - ipBlock:
+            cidr: 10.0.0.0/8
+        - ipBlock:
+            cidr: 172.16.0.0/12
+        - ipBlock:
+            cidr: 192.168.0.0/16
+---
+# Internet profile: Allow HTTPS egress (for SaaS integrations)
+# Note: This allows ALL HTTPS traffic. For granular control, use Cilium L7 policies.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: n8n-egress-internet
+  namespace: n8n
+  labels:
+    app.kubernetes.io/name: n8n
+    policy-profile: internet
+spec:
+  podSelector:
+    matchLabels:
+      app: n8n
+  policyTypes:
+    - Egress
+  egress:
+    # Allow DNS
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    # Allow HTTPS to internet (exclude RFC1918 for security)
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except:
+              - 10.0.0.0/8
+              - 172.16.0.0/12
+              - 192.168.0.0/16
+              - 169.254.0.0/16  # Link-local
+              - 127.0.0.0/8     # Loopback
+      ports:
+        - protocol: TCP
+          port: 443
+    # Allow internal cluster traffic
+    - to:
+        - ipBlock:
+            cidr: 10.0.0.0/8
+        - ipBlock:
+            cidr: 172.16.0.0/12
+        - ipBlock:
+            cidr: 192.168.0.0/16
+---
+# Database profile: Allow common database ports
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: n8n-egress-databases
+  namespace: n8n
+  labels:
+    app.kubernetes.io/name: n8n
+    policy-profile: databases
+spec:
+  podSelector:
+    matchLabels:
+      app: n8n
+  policyTypes:
+    - Egress
+  egress:
+    # PostgreSQL
+    - ports:
+        - protocol: TCP
+          port: 5432
+    # MySQL
+    - ports:
+        - protocol: TCP
+          port: 3306
+    # MongoDB
+    - ports:
+        - protocol: TCP
+          port: 27017
+    # Redis
+    - ports:
+        - protocol: TCP
+          port: 6379
+---
+# SMTP profile: Allow email sending
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: n8n-egress-smtp
+  namespace: n8n
+  labels:
+    app.kubernetes.io/name: n8n
+    policy-profile: smtp
+spec:
+  podSelector:
+    matchLabels:
+      app: n8n
+  policyTypes:
+    - Egress
+  egress:
+    # SMTP ports
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except:
+              - 10.0.0.0/8
+              - 172.16.0.0/12
+              - 192.168.0.0/16
+      ports:
+        - protocol: TCP
+          port: 25
+        - protocol: TCP
+          port: 465
+        - protocol: TCP
+          port: 587
+---
+# Block n8n telemetry endpoints explicitly (defense in depth)
+# Apply this policy to block known n8n external communication endpoints
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: n8n-block-telemetry
+  namespace: n8n
+  labels:
+    app.kubernetes.io/name: n8n
+    policy-profile: block-telemetry
+  annotations:
+    description: |
+      This policy is a reminder that these endpoints should be blocked.
+      Standard NetworkPolicy cannot block by FQDN - use firewall rules or Cilium.
+      Known n8n endpoints to block:
+        - license.n8n.io
+        - telemetry.n8n.io
+        - api.n8n.io
+        - api.posthog.com
+        - api.rudderstack.com
+        - *.sentry.io
+spec:
+  podSelector:
+    matchLabels:
+      app: n8n
+  policyTypes:
+    - Egress
+  # Empty egress denies all - combine with other policies that allow what's needed
+  egress: []

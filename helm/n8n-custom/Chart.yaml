@@ -1,0 +1,20 @@
+apiVersion: v2
+name: n8n-custom
+description: GDPR-compliant n8n workflow automation with privacy-first defaults
+type: application
+version: 1.0.0
+appVersion: "2.3.2"
+keywords:
+  - n8n
+  - workflow
+  - automation
+  - gdpr
+  - privacy
+home: https://github.com/tinod/n8n-custom-image
+sources:
+  - https://github.com/tinod/n8n-custom-image
+maintainers:
+  - name: tinod
+annotations:
+  category: Workflow Automation
+  licenses: "Custom (based on n8n Fair-code)"

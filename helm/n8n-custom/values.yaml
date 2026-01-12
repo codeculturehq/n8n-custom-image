@@ -1,0 +1,320 @@
+# n8n-custom Helm Chart Values
+# =============================
+# GDPR-compliant n8n with privacy-first defaults
+
+# -- Image configuration
+image:
+  repository: tinod/n8n-custom-image-secure
+  tag: ""  # Defaults to Chart appVersion
+  pullPolicy: IfNotPresent
+
+# -- Image pull secrets for private registries
+imagePullSecrets: []
+
+# -- Override chart name
+nameOverride: ""
+fullnameOverride: ""
+
+# -- Number of replicas (use 1 for SQLite, multiple for PostgreSQL with queue mode)
+replicaCount: 1
+
+# -- Service account configuration
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+# -- Pod annotations
+podAnnotations: {}
+
+# -- Pod security context
+podSecurityContext:
+  fsGroup: 1000
+
+# -- Container security context
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 1000
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: false
+  capabilities:
+    drop:
+      - ALL
+
+# -- Service configuration
+service:
+  type: ClusterIP
+  port: 5678
+  annotations: {}
+
+# -- Ingress configuration
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+    # kubernetes.io/ingress.class: nginx
+    # cert-manager.io/cluster-issuer: letsencrypt
+  hosts:
+    - host: n8n.local
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+    # - secretName: n8n-tls
+    #   hosts:
+    #     - n8n.local
+
+# -- Resource limits and requests
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: 2000m
+    memory: 2Gi
+
+# -- Node selector
+nodeSelector: {}
+
+# -- Tolerations
+tolerations: []
+
+# -- Affinity rules
+affinity: {}
+
+# =============================================================================
+# Privacy Configuration (GDPR/DSGVO Compliant Defaults)
+# =============================================================================
+privacy:
+  # -- Disable all external communications (telemetry, version checks, etc.)
+  disableExternalCommunications: true
+  # -- Disable diagnostics/telemetry
+  disableDiagnostics: true
+  # -- Disable version notifications
+  disableVersionNotifications: true
+  # -- Disable workflow templates (requires API call)
+  disableTemplates: true
+  # -- Disable personalization features
+  disablePersonalization: true
+  # -- Disable AI features
+  disableAI: true
+  # -- Disable hiring banner
+  disableHiringBanner: true
+  # -- Disable onboarding flow
+  disableOnboarding: true
+
+# =============================================================================
+# License Configuration
+# =============================================================================
+license:
+  # -- Enable license service (set false for offline/air-gapped)
+  serviceEnabled: false
+  # -- Offline mode (no license server communication)
+  offlineMode: true
+  # -- Auto-renew license (requires service enabled)
+  autoRenewEnabled: false
+  # -- License activation key (use existingSecret for production)
+  activationKey: ""
+  # -- Pre-loaded license certificate (base64 encoded)
+  certificate: ""
+  # -- Use existing secret for license credentials
+  existingSecret: ""
+  # -- Key in existing secret for activation key
+  activationKeyKey: "activation-key"
+  # -- Key in existing secret for certificate
+  certificateKey: "certificate"
+
+  # GDPR Feature Overrides (requires patched image)
+  gdprOverrides:
+    # -- Enable GDPR feature overrides
+    enabled: false
+    # -- Force plan name (Community, Team, Enterprise)
+    forcePlan: ""
+    # -- Force-enable features (comma-separated)
+    forceFeatures: ""
+    # -- Force-disable features (comma-separated)
+    blockFeatures: ""
+    # -- Quota overrides (key: quota name without prefix, value: limit)
+    quotas: {}
+      # usersLimit: 100
+      # workflowHistoryPruneLimit: 1000
+
+# =============================================================================
+# Database Configuration
+# =============================================================================
+database:
+  # -- Database type: sqlite or postgres
+  type: sqlite
+
+  # SQLite configuration
+  sqlite:
+    # -- Path for SQLite database file
+    path: /home/node/.n8n/database.sqlite
+
+  # PostgreSQL configuration
+  postgres:
+    # -- PostgreSQL host
+    host: ""
+    # -- PostgreSQL port
+    port: 5432
+    # -- PostgreSQL database name
+    database: n8n
+    # -- PostgreSQL username
+    user: n8n
+    # -- PostgreSQL password (use existingSecret for production)
+    password: ""
+    # -- PostgreSQL SSL mode
+    ssl: false
+    # -- Use existing secret for PostgreSQL credentials
+    existingSecret: ""
+    # -- Key in existing secret for password
+    passwordKey: "password"
+
+# =============================================================================
+# Queue Mode (for scaling)
+# =============================================================================
+queue:
+  # -- Enable queue mode (requires Redis and PostgreSQL)
+  enabled: false
+  # -- Queue health check interval (ms)
+  healthCheckInterval: 5000
+
+  redis:
+    # -- Redis host
+    host: ""
+    # -- Redis port
+    port: 6379
+    # -- Redis password
+    password: ""
+    # -- Use existing secret for Redis credentials
+    existingSecret: ""
+    # -- Key in existing secret for password
+    passwordKey: "password"
+
+# =============================================================================
+# Encryption
+# =============================================================================
+encryption:
+  # -- Encryption key for credentials (auto-generated if empty)
+  key: ""
+  # -- Use existing secret for encryption key
+  existingSecret: ""
+  # -- Key in existing secret
+  secretKey: "encryption-key"
+
+# =============================================================================
+# SMTP Configuration
+# =============================================================================
+smtp:
+  # -- Enable SMTP
+  enabled: false
+  # -- SMTP host
+  host: ""
+  # -- SMTP port
+  port: 587
+  # -- SMTP user
+  user: ""
+  # -- SMTP password (use existingSecret for production)
+  password: ""
+  # -- SMTP sender address
+  sender: ""
+  # -- Use SSL
+  ssl: false
+  # -- Use existing secret for SMTP credentials
+  existingSecret: ""
+  # -- Key in existing secret for password
+  passwordKey: "password"
+
+# =============================================================================
+# Webhook Configuration
+# =============================================================================
+webhook:
+  # -- Base URL for webhooks (auto-detected if empty)
+  url: ""
+
+# =============================================================================
+# Execution Configuration
+# =============================================================================
+execution:
+  # -- Execution timeout (seconds, 0 = no timeout)
+  timeout: 3600
+  # -- Data pruning (hours to keep, 0 = keep forever)
+  pruneDataMaxAge: 336  # 14 days
+  # -- Max data count to prune per cycle
+  pruneDataMaxCount: 10000
+
+# =============================================================================
+# Persistence
+# =============================================================================
+persistence:
+  # -- Enable persistence
+  enabled: true
+  # -- Storage class (empty = default)
+  storageClass: ""
+  # -- Access mode
+  accessMode: ReadWriteOnce
+  # -- Storage size
+  size: 10Gi
+  # -- Use existing PVC
+  existingClaim: ""
+  # -- Annotations for PVC
+  annotations: {}
+
+# =============================================================================
+# Network Policies
+# =============================================================================
+networkPolicy:
+  # -- Enable network policies
+  enabled: true
+  # -- Network policy profile: minimal, saas, ai-providers, custom
+  profile: minimal
+  # -- Additional egress rules (for custom profile)
+  additionalEgress: []
+    # - to:
+    #     - ipBlock:
+    #         cidr: 10.0.0.0/8
+    #   ports:
+    #     - protocol: TCP
+    #       port: 443
+
+# =============================================================================
+# Probes
+# =============================================================================
+livenessProbe:
+  enabled: true
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+readinessProbe:
+  enabled: true
+  initialDelaySeconds: 10
+  periodSeconds: 5
+  timeoutSeconds: 3
+  failureThreshold: 3
+
+# =============================================================================
+# Extra Environment Variables
+# =============================================================================
+extraEnv: []
+  # - name: MY_CUSTOM_VAR
+  #   value: "my-value"
+
+# -- Extra environment variables from secrets/configmaps
+extraEnvFrom: []
+  # - secretRef:
+  #     name: my-secret
+  # - configMapRef:
+  #     name: my-configmap
+
+# =============================================================================
+# Init Containers
+# =============================================================================
+initContainers: []
+
+# =============================================================================
+# Sidecars
+# =============================================================================
+sidecars: []

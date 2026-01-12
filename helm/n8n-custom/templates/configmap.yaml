@@ -1,0 +1,33 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "n8n-custom.fullname" . }}-config
+  labels:
+    {{- include "n8n-custom.labels" . | nindent 4 }}
+data:
+  # Privacy configuration summary
+  privacy-profile: |
+    External Communications: {{ .Values.privacy.disableExternalCommunications | ternary "DISABLED" "enabled" }}
+    Diagnostics/Telemetry: {{ .Values.privacy.disableDiagnostics | ternary "DISABLED" "enabled" }}
+    Version Notifications: {{ .Values.privacy.disableVersionNotifications | ternary "DISABLED" "enabled" }}
+    Templates: {{ .Values.privacy.disableTemplates | ternary "DISABLED" "enabled" }}
+    Personalization: {{ .Values.privacy.disablePersonalization | ternary "DISABLED" "enabled" }}
+    AI Features: {{ .Values.privacy.disableAI | ternary "DISABLED" "enabled" }}
+
+  # License configuration summary
+  license-profile: |
+    License Service: {{ .Values.license.serviceEnabled | ternary "ENABLED" "disabled" }}
+    Offline Mode: {{ .Values.license.offlineMode | ternary "ENABLED" "disabled" }}
+    Auto Renew: {{ .Values.license.autoRenewEnabled | ternary "ENABLED" "disabled" }}
+    {{- if .Values.license.gdprOverrides.enabled }}
+    GDPR Overrides: ENABLED
+    {{- if .Values.license.gdprOverrides.forcePlan }}
+    Force Plan: {{ .Values.license.gdprOverrides.forcePlan }}
+    {{- end }}
+    {{- end }}
+
+  # Database configuration
+  database-type: {{ .Values.database.type | quote }}
+
+  # Network policy profile
+  network-policy-profile: {{ .Values.networkPolicy.profile | quote }}
