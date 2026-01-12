@@ -1,0 +1,137 @@
+diff --git a/packages/cli/src/commands/base-command.ts b/packages/cli/src/commands/base-command.ts
+index d5380267..2534cb6f 100644
+--- a/packages/cli/src/commands/base-command.ts
++++ b/packages/cli/src/commands/base-command.ts
+@@ -80,6 +80,28 @@ export abstract class BaseCommand<F = never> {
+ 	protected needsTaskRunner = false;
+
+ 	async init(): Promise<void> {
++		const externalCommsDisabled = process.env.N8N_DISABLE_EXTERNAL_COMMUNICATIONS === 'true';
++		const licenseServiceOverride = process.env.N8N_LICENSE_SERVICE_ENABLED;
++		const licenseServiceEnabled =
++			licenseServiceOverride === 'true'
++				? true
++				: licenseServiceOverride === 'false'
++					? false
++					: !externalCommsDisabled;
++		if (externalCommsDisabled) {
++			this.globalConfig.diagnostics.enabled = false;
++			this.globalConfig.versionNotifications.enabled = false;
++			this.globalConfig.versionNotifications.whatsNewEnabled = false;
++			this.globalConfig.dynamicBanners.enabled = false;
++			this.globalConfig.templates.enabled = false;
++			this.globalConfig.personalization.enabled = false;
++			this.globalConfig.sentry.backendDsn = '';
++			this.globalConfig.sentry.frontendDsn = '';
++		}
++		if (!licenseServiceEnabled) {
++			this.globalConfig.license.autoRenewalEnabled = false;
++		}
++
+ 		this.dbConnection = Container.get(DbConnection);
+ 		this.errorReporter = Container.get(ErrorReporter);
+
+@@ -250,6 +272,18 @@ export abstract class BaseCommand<F = never> {
+ 		Container.get(LicenseState).setLicenseProvider(this.license);
+
+ 		const { activationKey } = this.globalConfig.license;
++		const externalCommsDisabled = process.env.N8N_DISABLE_EXTERNAL_COMMUNICATIONS === 'true';
++		const licenseServiceOverride = process.env.N8N_LICENSE_SERVICE_ENABLED;
++		const licenseServiceEnabled =
++			licenseServiceOverride === 'true'
++				? true
++				: licenseServiceOverride === 'false'
++					? false
++					: !externalCommsDisabled;
++
++		if (!licenseServiceEnabled) {
++			return this.logger.debug('License service disabled: skipping activation');
++		}
+
+ 		if (activationKey) {
+ 			const hasCert = (await this.license.loadCertStr()).length > 0;
+diff --git a/packages/cli/src/server.ts b/packages/cli/src/server.ts
+index ec5e2e8f..92fdbc94 100644
+--- a/packages/cli/src/server.ts
++++ b/packages/cli/src/server.ts
+@@ -30,6 +30,8 @@ import { Push } from '@/push';
+ import * as ResponseHelper from '@/response-helper';
+ import type { FrontendService } from '@/services/frontend.service';
+
++const externalCommsDisabled = process.env.N8N_DISABLE_EXTERNAL_COMMUNICATIONS === 'true';
++
+ import '@/controllers/active-workflows.controller';
+ import '@/controllers/annotation-tags.controller.ee';
+ import '@/controllers/auth.controller';
+@@ -151,7 +153,7 @@ export class Server extends AbstractServer {
+ 			this.logger.warn(`SAML initialization failed: ${(error as Error).message}`);
+ 		}
+
+-		if (this.globalConfig.diagnostics.enabled) {
++		if (this.globalConfig.diagnostics.enabled && !externalCommsDisabled) {
+ 			await import('@/controllers/telemetry.controller');
+ 			await import('@/controllers/posthog.controller');
+ 		}
+diff --git a/packages/cli/src/services/frontend.service.ts b/packages/cli/src/services/frontend.service.ts
+index 2d9ef13b..c3f78a0a 100644
+--- a/packages/cli/src/services/frontend.service.ts
++++ b/packages/cli/src/services/frontend.service.ts
+@@ -149,11 +149,12 @@ export class FrontendService {
+ 	}
+
+ 	private async initSettings() {
++		const externalCommsDisabled = process.env.N8N_DISABLE_EXTERNAL_COMMUNICATIONS === 'true';
+ 		const instanceBaseUrl = this.urlService.getInstanceBaseUrl();
+ 		const restEndpoint = this.globalConfig.endpoints.rest;
+
+ 		const telemetrySettings: ITelemetrySettings = {
+-			enabled: this.globalConfig.diagnostics.enabled,
++			enabled: this.globalConfig.diagnostics.enabled && !externalCommsDisabled,
+ 		};
+
+ 		if (telemetrySettings.enabled) {
+@@ -208,20 +209,20 @@ export class FrontendService {
+ 				oauth2: `${instanceBaseUrl}/${restEndpoint}/oauth2-credential/callback`,
+ 			},
+ 			versionNotifications: {
+-				enabled: this.globalConfig.versionNotifications.enabled,
++				enabled: this.globalConfig.versionNotifications.enabled && !externalCommsDisabled,
+ 				endpoint: this.globalConfig.versionNotifications.endpoint,
+-				whatsNewEnabled: this.globalConfig.versionNotifications.whatsNewEnabled,
++				whatsNewEnabled: this.globalConfig.versionNotifications.whatsNewEnabled && !externalCommsDisabled,
+ 				whatsNewEndpoint: this.globalConfig.versionNotifications.whatsNewEndpoint,
+ 				infoUrl: this.globalConfig.versionNotifications.infoUrl,
+ 			},
+ 			dynamicBanners: {
+ 				endpoint: this.globalConfig.dynamicBanners.endpoint,
+-				enabled: this.globalConfig.dynamicBanners.enabled,
++				enabled: this.globalConfig.dynamicBanners.enabled && !externalCommsDisabled,
+ 			},
+ 			instanceId: this.instanceSettings.instanceId,
+ 			telemetry: telemetrySettings,
+ 			posthog: {
+-				enabled: this.globalConfig.diagnostics.enabled,
++				enabled: this.globalConfig.diagnostics.enabled && !externalCommsDisabled,
+ 				apiHost: this.globalConfig.diagnostics.posthogConfig.apiHost,
+ 				apiKey: this.globalConfig.diagnostics.posthogConfig.apiKey,
+ 				autocapture: false,
+@@ -230,7 +231,9 @@ export class FrontendService {
+ 				debug: this.globalConfig.logging.level === 'debug',
+ 			},
+ 			personalizationSurveyEnabled:
+-				this.globalConfig.personalization.enabled && this.globalConfig.diagnostics.enabled,
++				this.globalConfig.personalization.enabled &&
++				this.globalConfig.diagnostics.enabled &&
++				!externalCommsDisabled,
+ 			defaultLocale: this.globalConfig.defaultLocale,
+ 			userManagement: {
+ 				quota: this.license.getUsersLimit(),
+@@ -272,7 +275,7 @@ export class FrontendService {
+ 				setup: false,
+ 			},
+ 			templates: {
+-				enabled: this.globalConfig.templates.enabled,
++				enabled: this.globalConfig.templates.enabled && !externalCommsDisabled,
+ 				host: this.globalConfig.templates.host,
+ 			},
+ 			executionMode: this.globalConfig.executions.mode,

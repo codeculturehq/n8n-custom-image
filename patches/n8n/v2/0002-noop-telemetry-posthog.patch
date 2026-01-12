@@ -1,0 +1,45 @@
+diff --git a/packages/cli/src/posthog/index.ts b/packages/cli/src/posthog/index.ts
+index 7c4558c3..0932266b 100644
+--- a/packages/cli/src/posthog/index.ts
++++ b/packages/cli/src/posthog/index.ts
+@@ -15,6 +15,10 @@ export class PostHogClient {
+ 	) {}
+
+ 	async init() {
++		if (process.env.N8N_DISABLE_EXTERNAL_COMMUNICATIONS === 'true') {
++			return;
++		}
++
+ 		const { enabled, posthogConfig } = this.globalConfig.diagnostics;
+ 		if (!enabled) {
+ 			return;
+diff --git a/packages/cli/src/telemetry/index.ts b/packages/cli/src/telemetry/index.ts
+index f4a1f929..de53ee46 100644
+--- a/packages/cli/src/telemetry/index.ts
++++ b/packages/cli/src/telemetry/index.ts
+@@ -64,6 +64,10 @@ export class Telemetry {
+ 	) {}
+
+ 	async init() {
++		if (process.env.N8N_DISABLE_EXTERNAL_COMMUNICATIONS === 'true') {
++			return;
++		}
++
+ 		const { enabled, backendConfig } = this.globalConfig.diagnostics;
+ 		if (enabled) {
+ 			const [key, dataPlaneUrl] = backendConfig.split(';');
+diff --git a/packages/frontend/editor-ui/src/app/stores/posthog.store.ts b/packages/frontend/editor-ui/src/app/stores/posthog.store.ts
+index 7ac1cf0f..fee097bf 100644
+--- a/packages/frontend/editor-ui/src/app/stores/posthog.store.ts
++++ b/packages/frontend/editor-ui/src/app/stores/posthog.store.ts
+@@ -122,6 +122,10 @@ export const usePostHog = defineStore('posthog', () => {
+ 			return;
+ 		}
+
++		if (!settingsStore.settings.telemetry?.enabled) {
++			return;
++		}
++
+ 		const config = settingsStore.settings.posthog;
+ 		if (!config.enabled) {
+ 			return;
