@@ -95,11 +95,12 @@ services:
       - N8N_LICENSE_OFFLINE_MODE=true
       - N8N_LICENSE_AUTO_RENEW_ENABLED=false
 
-      # Optional: GDPR Feature Overrides (uncomment to enable enterprise features)
-      # - N8N_LICENSE_FORCE_PLAN=Enterprise
-      # - N8N_LICENSE_FORCE_FEATURES=feat:sharing,feat:ldap,feat:advancedExecutionFilters
-      # - N8N_LICENSE_QUOTA_USERS_LIMIT=100
-      # - N8N_LICENSE_QUOTA_WORKFLOW_HISTORY_PRUNE_LIMIT=1000
+      # GDPR Feature Overrides (set in .env.secure - requires source-patched build)
+      - N8N_LICENSE_FORCE_PLAN=${N8N_LICENSE_FORCE_PLAN:-}
+      - N8N_LICENSE_FORCE_FEATURES=${N8N_LICENSE_FORCE_FEATURES:-}
+      - N8N_LICENSE_QUOTA_USERS_LIMIT=${N8N_LICENSE_QUOTA_USERS_LIMIT:-}
+      - N8N_LICENSE_QUOTA_WORKFLOW_HISTORY_PRUNE_LIMIT=${N8N_LICENSE_QUOTA_WORKFLOW_HISTORY_PRUNE_LIMIT:-}
+      - N8N_LICENSE_QUOTA_MAX_TEAM_PROJECTS=${N8N_LICENSE_QUOTA_MAX_TEAM_PROJECTS:-}
 
       # =========================================================================
       # Security Settings

@@ -2,10 +2,10 @@ diff --git a/packages/cli/src/license.ts b/packages/cli/src/license.ts
 index caa9baf6..243568ca 100644
 --- a/packages/cli/src/license.ts
 +++ b/packages/cli/src/license.ts
-@@ -24,6 +24,33 @@ import { N8N_VERSION, SETTINGS_LICENSE_CERT_KEY } from './constants';
+@@ -24,6 +24,40 @@ import { N8N_VERSION, SETTINGS_LICENSE_CERT_KEY } from './constants';
  const LICENSE_RENEWAL_DISABLED_WARNING =
  	'Automatic license renewal is disabled. The license will not renew automatically, and access to licensed features may be lost!';
- 
+
 +// GDPR-compliant license feature overrides via environment variables
 +// N8N_LICENSE_FORCE_FEATURES: comma-separated list of features to force enable
 +// N8N_LICENSE_BLOCK_FEATURES: comma-separated list of features to force disable
@@ -20,12 +20,19 @@ index caa9baf6..243568ca 100644
 +const FORCED_PLAN = process.env.N8N_LICENSE_FORCE_PLAN;
 +
 +// Quota overrides: N8N_LICENSE_QUOTA_<NAME>=<value>
++// Converts SCREAMING_SNAKE_CASE to camelCase (e.g., MAX_TEAM_PROJECTS -> maxTeamProjects)
++const toCamelCase = (str: string): string => {
++	return str
++		.toLowerCase()
++		.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
++};
++
 +const parseQuotaOverrides = (): Map<string, number> => {
 +	const quotas = new Map<string, number>();
 +	for (const [key, value] of Object.entries(process.env)) {
 +		if (key.startsWith('N8N_LICENSE_QUOTA_') && value) {
-+			const quotaName =
-+				'quota:' + key.replace('N8N_LICENSE_QUOTA_', '').toLowerCase().replace(/_/g, ':');
++			const rawName = key.replace('N8N_LICENSE_QUOTA_', '');
++			const quotaName = 'quota:' + toCamelCase(rawName);
 +			quotas.set(quotaName, parseInt(value, 10));
 +		}
 +	}
@@ -36,7 +43,7 @@ index caa9baf6..243568ca 100644
  export type FeatureReturnType = Partial<
  	{
  		planName: string;
-@@ -54,6 +81,19 @@ export class License implements LicenseProvider {
+@@ -54,6 +88,19 @@ export class License implements LicenseProvider {
  		forceRecreate = false,
  		isCli = false,
  	}: { forceRecreate?: boolean; isCli?: boolean } = {}) {
@@ -56,8 +63,8 @@ index caa9baf6..243568ca 100644
  		if (this.manager && !forceRecreate) {
  			this.logger.warn('License manager already initialized or shutting down');
  			return;
-@@ -65,8 +105,10 @@ export class License implements LicenseProvider {
- 
+@@ -65,8 +112,10 @@ export class License implements LicenseProvider {
+
  		const { instanceType } = this.instanceSettings;
  		const isMainInstance = instanceType === 'main';
 -		const server = this.globalConfig.license.serverUrl;
@@ -69,18 +76,18 @@ index caa9baf6..243568ca 100644
  		const autoRenewOffset = 72 * Time.hours.toSeconds;
  		const saveCertStr = isMainInstance
  			? async (value: TLicenseBlock) => await this.saveCertStr(value)
-@@ -90,7 +132,7 @@ export class License implements LicenseProvider {
+@@ -90,7 +139,7 @@ export class License implements LicenseProvider {
  		const { autoRenewalEnabled } = this.globalConfig.license;
  		const eligibleToRenew = isCli || isLeader;
- 
+
 -		const shouldRenew = eligibleToRenew && autoRenewalEnabled;
 +		const shouldRenew = licenseServiceEnabled && eligibleToRenew && autoRenewalEnabled;
- 
+
  		if (eligibleToRenew && !autoRenewalEnabled) {
  			this.logger.warn(LICENSE_RENEWAL_DISABLED_WARNING);
-@@ -250,6 +292,14 @@ export class License implements LicenseProvider {
+@@ -250,6 +299,14 @@ export class License implements LicenseProvider {
  	}
- 
+
  	isLicensed(feature: BooleanLicenseFeature) {
 +		// GDPR override: blocked features are always unlicensed
 +		if (BLOCKED_FEATURES.has(feature)) {
@@ -92,10 +99,10 @@ index caa9baf6..243568ca 100644
 +		}
  		return this.manager?.hasFeatureEnabled(feature) ?? false;
  	}
- 
-@@ -378,6 +428,15 @@ export class License implements LicenseProvider {
+
+@@ -378,6 +435,15 @@ export class License implements LicenseProvider {
  	}
- 
+
  	getValue<T extends keyof FeatureReturnType>(feature: T): FeatureReturnType[T] {
 +		// GDPR override: forced plan name
 +		if (feature === 'planName' && FORCED_PLAN) {
@@ -108,4 +115,4 @@ index caa9baf6..243568ca 100644
 +		}
  		return this.manager?.getFeatureValue(feature) as FeatureReturnType[T];
  	}
- 
+
