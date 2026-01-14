@@ -1,3 +1,9 @@
 vendor/
 .env
 .env.license
+
+# Claude Code runtime cache
+.claude/
+
+# TLDR CLI runtime data
+.tldr/
