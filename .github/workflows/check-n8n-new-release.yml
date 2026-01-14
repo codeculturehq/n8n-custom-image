@@ -7,7 +7,8 @@ on:
 
 jobs:
   check-v1:
-    name: 🔍 Check n8n v1 releases
+    name: 🔍 Check n8n v1 releases (DISABLED)
+    if: false  # v1 builds disabled - re-enable when needed
     runs-on: ubuntu-latest
     timeout-minutes: 10
     outputs:
@@ -119,9 +120,9 @@ jobs:
           fi
 
   build-v1:
-    name: 🐳 Build v1
+    name: 🐳 Build v1 (DISABLED)
     needs: check-v1
-    if: ${{ needs.check-v1.outputs.has_new_release == 'true' }}
+    if: false  # v1 builds disabled - re-enable when needed
     uses: ./.github/workflows/build-and-push.yml
     secrets: inherit
     with:
