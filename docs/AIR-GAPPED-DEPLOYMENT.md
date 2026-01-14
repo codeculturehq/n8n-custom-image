@@ -405,3 +405,80 @@ cat /etc/resolv.conf
 - [Zero Outbound Comms Plan](plans/2026-01-09-zero-outbound-comms.md) - Technical design
 - [Egress Allowlist Profiles](egress/allowlist-profiles.md) - Network profiles
 - [SECURITY-DSGVO-ANALYSIS.md](../SECURITY-DSGVO-ANALYSIS.md) - GDPR compliance analysis
+
+## Cross-Domain Instance Tracking Prevention
+
+### What is Cross-Domain Tracking?
+
+n8n.io uses several mechanisms to track and communicate with self-hosted instances:
+
+1. **PostMessage API**: When you visit n8n.io templates, your browser can communicate with embedded n8n instances via postMessage. This allows n8n.io to:
+   - Detect which n8n instances you have access to
+   - Send workflows directly to your instance
+   - Track instance versions and availability
+
+2. **RudderStack Analytics**: External JavaScript loaded from `cdn-rs.n8n.io` that tracks user behavior and instance metadata.
+
+3. **PostHog**: Analytics and feature flag service that sets cookies and tracks sessions.
+
+### How We Prevent It
+
+The `n8n-custom-image-secure` variant includes patches that:
+
+1. **Disable postMessage Listener** (`0004-disable-cross-domain-tracking.patch`)
+   - When `N8N_DISABLE_EXTERNAL_COMMUNICATIONS=true`, the instance does NOT:
+     - Listen for `openWorkflow` commands from parent windows
+     - Emit `n8nReady` signals to parent windows
+   - This prevents n8n.io from detecting your instance when you visit their site
+
+2. **Block Analytics CDN Loading**
+   - RudderStack CDN (`cdn-rs.n8n.io`) is not loaded when telemetry is disabled
+   - PostHog is not initialized when telemetry is disabled
+
+3. **Disable Templates**
+   - Template fetching from api.n8n.io is disabled
+   - No outbound requests to n8n.io servers
+
+### Environment Variables
+
+Ensure these are set in your deployment:
+
+```yaml
+# Complete tracking prevention
+N8N_DISABLE_EXTERNAL_COMMUNICATIONS: "true"
+N8N_DIAGNOSTICS_ENABLED: "false"
+N8N_TEMPLATES_ENABLED: "false"
+
+# Additional telemetry disablement
+N8N_DIAGNOSTICS_POSTHOG_DISABLE_RECORDING: "true"
+N8N_DIAGNOSTICS_POSTHOG_API_KEY: ""
+N8N_VERSION_NOTIFICATIONS_ENABLED: "false"
+```
+
+### Verifying No Cross-Domain Communication
+
+1. **Check browser console**: With DevTools open, visit n8n.io templates page while logged into your instance. Your instance should NOT appear in the "Use workflow" dropdown.
+
+2. **Network inspection**: Monitor your instance's network traffic:
+   ```bash
+   # Using tcpdump
+   tcpdump -i any host n8n.io or host posthog.com or host rudderstack.com
+
+   # Using ngrep
+   ngrep -d any "n8n.io\|posthog\|rudder"
+   ```
+
+3. **Browser DevTools**: Check for:
+   - No `cdn-rs.n8n.io` requests in Network tab
+   - No `posthog.com` requests
+   - No postMessage events in Application > Messages
+
+### Why This Matters for GDPR
+
+Under GDPR (DSGVO), cross-domain tracking without consent is problematic because:
+
+1. **Data Minimization**: Instance URLs/IPs are personal data when they can identify an organization
+2. **Purpose Limitation**: Users visiting n8n.io shouldn't have their self-hosted instances tracked
+3. **Consent**: Third-party cookies and tracking require explicit consent
+
+By disabling these mechanisms, your self-hosted n8n instance remains completely invisible to n8n.io infrastructure.

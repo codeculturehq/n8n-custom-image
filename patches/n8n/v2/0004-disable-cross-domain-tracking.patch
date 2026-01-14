@@ -1,0 +1,66 @@
+diff --git a/packages/frontend/editor-ui/src/app/plugins/telemetry/index.ts b/packages/frontend/editor-ui/src/app/plugins/telemetry/index.ts
+index 19735927..e5509f46 100644
+--- a/packages/frontend/editor-ui/src/app/plugins/telemetry/index.ts
++++ b/packages/frontend/editor-ui/src/app/plugins/telemetry/index.ts
+@@ -202,6 +202,11 @@ export class Telemetry {
+ 	}
+ 
+ 	private initRudderStack(key: string, proxy: string, options: IDataObject) {
++		// GDPR: Guard against loading external analytics CDN
++		const settingsStore = useSettingsStore();
++		if (!settingsStore.settings?.telemetry?.enabled) {
++			return;
++		}
+ 		window.rudderanalytics = window.rudderanalytics || [];
+ 		if (!this.rudderStack) {
+ 			return;
+@@ -238,6 +243,11 @@ export class Telemetry {
+ 		}
+ 
+ 		this.rudderStack.loadJS = () => {
++			// GDPR: Skip loading external RudderStack CDN script
++			const settingsStore = useSettingsStore();
++			if (!settingsStore.settings?.telemetry?.enabled) {
++				return;
++			}
+ 			const script = document.createElement('script');
+ 
+ 			script.type = 'text/javascript';
+diff --git a/packages/frontend/editor-ui/src/app/views/NodeView.vue b/packages/frontend/editor-ui/src/app/views/NodeView.vue
+index 8face970..8fff18a2 100644
+--- a/packages/frontend/editor-ui/src/app/views/NodeView.vue
++++ b/packages/frontend/editor-ui/src/app/views/NodeView.vue
+@@ -1534,9 +1534,22 @@ function removeCommandBarEventBindings() {
+ 
+ /**
+  * Post message events
++ *
++ * GDPR Note: postMessage is used by n8n.io to communicate with embedded instances.
++ * When templates are disabled (external communications disabled), we skip these
++ * bindings to prevent n8n.io from detecting or interacting with this instance.
+  */
+ 
++function isPostMessageAllowed(): boolean {
++	// Templates enabled is the indicator that external communications are allowed
++	return settingsStore.settings?.templates?.enabled === true;
++}
++
+ function addPostMessageEventBindings() {
++	// GDPR: Don't accept postMessage commands when external comms disabled
++	if (!isPostMessageAllowed()) {
++		return;
++	}
+ 	window.addEventListener('message', onPostMessageReceived);
+ }
+ 
+@@ -1545,6 +1558,10 @@ function removePostMessageEventBindings() {
+ }
+ 
+ function emitPostMessageReady() {
++	// GDPR: Don't announce instance existence to parent windows
++	if (!isPostMessageAllowed()) {
++		return;
++	}
+ 	if (window.parent) {
+ 		window.parent.postMessage(
+ 			JSON.stringify({ command: 'n8nReady', version: rootStore.versionCli }),
