@@ -11,7 +11,7 @@ on:
 
 jobs:
   check-and-prepare:
-    runs-on: ubuntu-latest
+    runs-on: codeculture-org-runner
     timeout-minutes: 10
 
     outputs:
