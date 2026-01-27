@@ -9,7 +9,7 @@ jobs:
   check-v1:
     name: 🔍 Check n8n v1 releases (DISABLED)
     if: false  # v1 builds disabled - re-enable when needed
-    runs-on: ubuntu-latest
+    runs-on: codeculture-org-runner
     timeout-minutes: 10
     outputs:
       has_new_release: ${{ steps.check.outputs.has_new_release }}
@@ -65,7 +65,7 @@ jobs:
 
   check-v2:
     name: 🔍 Check n8n v2 releases
-    runs-on: ubuntu-latest
+    runs-on: codeculture-org-runner
     timeout-minutes: 10
     outputs:
       has_new_release: ${{ steps.check.outputs.has_new_release }}
