@@ -36,7 +36,7 @@ on:
 jobs:
   build-push-docker-image:
     name: 🐳 Build and push Docker image
-    runs-on: ubuntu-latest
+    runs-on: codeculture-org-runner
     timeout-minutes: 60
     env:
       DOCKER_IMAGE: ${{ vars.DOCKER_IMAGE || 'tinod/n8n-custom-image' }}
@@ -133,7 +133,7 @@ jobs:
   create-release:
     name: 🏷️ Create GitHub Release
     needs: build-push-docker-image
-    runs-on: ubuntu-latest
+    runs-on: codeculture-org-runner
     timeout-minutes: 2
     permissions:
       contents: write
@@ -146,7 +146,7 @@ jobs:
   notify-new-release:
     name: 💬 Notify new image release in Slack
     needs: build-push-docker-image
-    runs-on: ubuntu-latest
+    runs-on: codeculture-org-runner
     timeout-minutes: 2
     env:
       DOCKER_IMAGE: ${{ vars.DOCKER_IMAGE || 'tinod/n8n-custom-image' }}
